@@ -138,6 +138,7 @@ class TenantProvisioner
         return [
             'measurement_display_unit' => 'in',   // canonical storage is cm (SRS §3.3)
             'numbering' => [
+                'customer'  => 'CUS-{SEQ:5}',
                 'order'     => 'ORD-{YYYY}-{SEQ:5}',
                 'invoice'   => 'INV-{YYYY}-{SEQ:5}',
                 'receipt'   => 'RCP-{YYYY}-{SEQ:5}',

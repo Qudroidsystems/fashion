@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,9 +32,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('api.tenant')->group(function () {
             Route::get('/tenants/current', [TenantController::class, 'current'])->name('tenants.current');
 
+            // Customers (SRS §8.2)
+            Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+            Route::post('/customers', [CustomerController::class, 'store'])->middleware('idempotent')->name('customers.store');
+            Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::patch('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+            Route::get('/customers/{customer}/timeline', [CustomerController::class, 'timeline'])->name('customers.timeline');
+            Route::post('/customers/{customer}/follow-ups', [CustomerController::class, 'storeFollowUp'])->middleware('idempotent')->name('customers.follow-ups.store');
+
             /*
-            | Module endpoints (customers, measurement-sessions, orders, …)
-            | are added here as each module is built.
+            | Further module endpoints (measurement-sessions, orders, …) go here.
             */
         });
     });

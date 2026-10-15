@@ -83,11 +83,11 @@
                 <x-cb.card title="Document numbering" icon="ri-hashtag" class="mt-3">
                     <p class="small text-muted">Tokens: <code>{YYYY}</code> year, <code>{MM}</code> month, <code>{SEQ:5}</code> running number padded to 5 digits. Numbers are unique within your fashion house.</p>
                     <div class="row g-3">
-                        @foreach(['quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts'] as $key => $label)
+                        @foreach(['customer' => 'Customer numbers', 'quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts'] as $key => $label)
                             <div class="col-md-6">
                                 <label class="form-label">{{ $label }}</label>
                                 <input type="text" name="numbering[{{ $key }}]" class="form-control font-monospace"
-                                       value="{{ old('numbering.' . $key, $tenant->setting('numbering.' . $key)) }}">
+                                       value="{{ old('numbering.' . $key, $tenant->setting('numbering.' . $key) ?: \App\Services\Numbering\DocumentNumber::DEFAULT_FORMATS[$key]) }}">
                             </div>
                         @endforeach
                     </div>

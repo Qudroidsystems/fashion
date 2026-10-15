@@ -35,10 +35,12 @@
 
     {{-- Stats --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3"><x-cb.stat label="Active staff" :value="$stats['staff']" icon="ri-team-line" accent="teal" /></div>
-        <div class="col-6 col-lg-3"><x-cb.stat label="Branches & locations" :value="$stats['branches']" icon="ri-building-4-line" accent="sky" /></div>
-        <div class="col-6 col-lg-3"><x-cb.stat label="Roles" :value="$stats['roles']" icon="ri-shield-user-line" accent="violet" /></div>
-        <div class="col-6 col-lg-3"><x-cb.stat label="Invitations pending" :value="$stats['invited']" icon="ri-mail-send-line" accent="amber" /></div>
+        @can('View customer')
+        <div class="col-6 col-lg-3"><a href="{{ route('customers.index') }}" class="text-decoration-none"><x-cb.stat label="Customers" :value="number_format($stats['customers'])" icon="ri-user-heart-line" accent="teal" :hint="$stats['new_customers'] . ' new this month'" /></a></div>
+        <div class="col-6 col-lg-3"><a href="{{ route('follow-ups.index') }}" class="text-decoration-none"><x-cb.stat label="My follow-ups due" :value="$stats['follow_ups_due']" icon="ri-alarm-line" accent="amber" /></a></div>
+        <div class="col-6 col-lg-3"><a href="{{ route('follow-ups.index', ['show' => 'overdue']) }}" class="text-decoration-none"><x-cb.stat label="Overdue follow-ups" :value="$stats['overdue']" icon="ri-alarm-warning-line" accent="rose" /></a></div>
+        @endcan
+        <div class="col-6 col-lg-3"><x-cb.stat label="Active staff" :value="$stats['staff']" icon="ri-team-line" accent="violet" :hint="$stats['branches'] . ' branch(es) · ' . $stats['roles'] . ' roles'" /></div>
     </div>
 
     <div class="row g-3">
@@ -60,6 +62,19 @@
                     @endforeach
                 </ul>
             </x-cb.card>
+
+            @if($birthdays->count())
+            <x-cb.card title="Birthdays this week" icon="ri-cake-2-line" class="mt-3" :flush="true">
+                <ul class="list-unstyled mb-0">
+                    @foreach($birthdays as $b)
+                        <li class="px-4 py-2 border-bottom small d-flex justify-content-between">
+                            <a href="{{ route('customers.show', $b) }}">{{ $b->first_name }} {{ $b->last_name }}</a>
+                            <span class="{{ $b->next_bday->isToday() ? 'fw-bold text-success' : 'text-muted' }}">{{ $b->next_bday->isToday() ? 'Today' : $b->next_bday->format('D j M') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </x-cb.card>
+            @endif
 
             @if($recent->count())
             <x-cb.card title="Recent activity" icon="ri-history-line" class="mt-3" :flush="true">
@@ -93,7 +108,11 @@
                                 <div>
                                     <div class="fw-semibold" style="color:var(--cb-heading)">{{ $m['name'] }}</div>
                                     <div class="small text-muted">{{ $m['desc'] }}</div>
-                                    <span class="status-pill st-muted mt-1">Phase {{ $m['phase'] }} · coming soon</span>
+                                    @if(!empty($m['route']) && Route::has($m['route']))
+                                        <a href="{{ route($m['route']) }}" class="status-pill st-success mt-1 text-decoration-none">Live · open</a>
+                                    @else
+                                        <span class="status-pill st-muted mt-1">Phase {{ $m['phase'] }} · coming soon</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>

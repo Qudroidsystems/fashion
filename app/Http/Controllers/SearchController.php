@@ -26,6 +26,15 @@ class SearchController extends Controller
         $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $q) . '%';
         $results = collect();
 
+        if ($user->can('View customer')) {
+            \App\Models\Customer::where('status', '!=', 'merged')->search($q)->limit(8)
+                ->get(['id', 'public_id', 'first_name', 'last_name', 'customer_number', 'phone'])
+                ->each(fn ($c) => $results->push([
+                    'title' => $c->name, 'url' => route('customers.show', $c), 'icon' => 'mdi-account-heart',
+                    'category' => 'Customers', 'subtitle' => trim($c->customer_number . ' · ' . $c->phone, ' ·'),
+                ]));
+        }
+
         if ($user->can('View user')) {
             User::inCurrentTenant()
                 ->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('email', 'like', $like)->orWhere('phone_number', 'like', $like))

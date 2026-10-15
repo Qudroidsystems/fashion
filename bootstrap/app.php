@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform.admin'     => \App\Http\Middleware\EnsurePlatformAdmin::class,
             'api.active'         => \App\Http\Middleware\EnsureApiUserActive::class,
             'api.tenant'         => \App\Http\Middleware\ResolveApiTenant::class,
+            'idempotent'         => \App\Http\Middleware\Idempotent::class,
         ]);
 
         // Every request gets a correlation id (logs, audit trail, X-Request-Id header).

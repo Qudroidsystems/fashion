@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View customer',    'icon' => 'ri-user-heart-line',      'label' => 'Customers'],
         ['perm' => 'View measurement', 'icon' => 'ri-ruler-2-line',         'label' => 'Measurements'],
         ['perm' => 'View style',       'icon' => 'ri-t-shirt-air-line',     'label' => 'Styles & Catalogue'],
         ['perm' => 'View inventory',   'icon' => 'ri-archive-line',   'label' => 'Inventory'],
@@ -30,10 +29,31 @@
     </li>
     @endcan
 
-    {{-- FASHION HOUSE MODULES (roadmap) --}}
+    {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count())
+    @if($visibleSoon->count() || $u->can('View customer'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
+    @endif
+
+    @can('View customer')
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ request()->routeIs('customers.*', 'follow-ups.*') ? 'active' : '' }}" href="#sidebarCustomers" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ request()->routeIs('customers.*', 'follow-ups.*') ? 'true' : 'false' }}" aria-controls="sidebarCustomers">
+            <i class="ri-user-heart-line"></i> <span>Customers</span>
+        </a>
+        <div class="collapse menu-dropdown {{ request()->routeIs('customers.*', 'follow-ups.*') ? 'show' : '' }}" id="sidebarCustomers">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item"><a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.index') ? 'active' : '' }}">All customers</a></li>
+                @can('Create customer')
+                <li class="nav-item"><a href="{{ route('customers.create') }}" class="nav-link {{ request()->routeIs('customers.create') ? 'active' : '' }}">New customer</a></li>
+                @endcan
+                <li class="nav-item"><a href="{{ route('follow-ups.index') }}" class="nav-link {{ request()->routeIs('follow-ups.*') ? 'active' : '' }}">Follow-ups</a></li>
+            </ul>
+        </div>
+    </li>
+    @endcan
+
+    @if($visibleSoon->count())
         @foreach($visibleSoon as $m)
         <li class="nav-item">
             <a class="nav-link menu-link sidebar-soon" href="javascript:void(0)" title="Coming in a later phase" aria-disabled="true">

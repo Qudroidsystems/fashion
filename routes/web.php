@@ -89,8 +89,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'updateStatus'])->name('tenants.status');
     });
 
-    /*
-    | Upcoming modules (SRS roadmap) go here, each in its own route file,
-    | e.g. require __DIR__ . '/modules/customers.php';
-    */
+    // ── Business modules (SRS roadmap), one route file each ─────────────
+    require __DIR__ . '/modules/customers.php';
 });

@@ -952,6 +952,13 @@
         @can('View dashboard')
         {title:'Dashboard',              url:'{{ route("dashboard") }}',               icon:'mdi-gauge',          category:'General',          keywords:['home','overview','start']},
         @endcan
+        @can('View customer')
+        {title:'Customers',              url:'{{ route("customers.index") }}',         icon:'mdi-account-heart',  category:'Customers',        keywords:['client','customer','crm','contact','vip','bride']},
+        {title:'Follow-ups',             url:'{{ route("follow-ups.index") }}',        icon:'mdi-alarm',          category:'Customers',        keywords:['follow','call','reminder','todo','task']},
+        @endcan
+        @can('Create customer')
+        {title:'New Customer',           url:'{{ route("customers.create") }}',        icon:'mdi-account-plus',   category:'Customers',        keywords:['add','new','register','client']},
+        @endcan
         @can('View user')
         {title:'Staff & Users',          url:'{{ route("users.index") }}',             icon:'mdi-account-group',  category:'Users & Access',   keywords:['staff','tailor','designer','cashier','account','user','employee']},
         @endcan
@@ -981,11 +988,12 @@
 
     /* ── category colours ── */
     var CAT_COLORS = {
-        'General':'#4f8ef7','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
+        'General':'#4f8ef7','Customers':'#0d9488','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
     };
 
     /* ── popular / suggestion chips ── */
     var POPULAR = [
+        {label:'Customers',  q:'customer'},
         {label:'Staff',      q:'staff'},
         {label:'Roles',      q:'roles'},
         {label:'Branches',   q:'branch'},
