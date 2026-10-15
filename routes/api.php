@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CatalogueController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
@@ -54,8 +55,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/customers/{customer}/measurement-requests', [MeasurementController::class, 'storeRequest'])->middleware('idempotent')->name('measurement-requests.store');
             Route::post('/measurement-requests/{measurementRequest}/revoke', [MeasurementController::class, 'revokeRequest'])->name('measurement-requests.revoke');
 
+            // Styles & ready-made catalogue (SRS §8.2)
+            Route::get('/styles', [CatalogueController::class, 'styles'])->name('styles.index');
+            Route::post('/styles', [CatalogueController::class, 'storeStyle'])->middleware('idempotent')->name('styles.store');
+            Route::get('/styles/{style}', [CatalogueController::class, 'style'])->name('styles.show');
+            Route::patch('/styles/{style}', [CatalogueController::class, 'updateStyle'])->name('styles.update');
+            Route::post('/styles/{style}/versions', [CatalogueController::class, 'newVersion'])->name('styles.versions.store');
+            Route::post('/styles/{style}/images', [CatalogueController::class, 'uploadImages'])->name('styles.images.store');
+            Route::post('/style-versions/{styleVersion}/publish', [CatalogueController::class, 'publish'])->middleware('idempotent')->name('style-versions.publish');
+            Route::get('/products', [CatalogueController::class, 'products'])->name('products.index');
+            Route::get('/products/lookup', [CatalogueController::class, 'lookup'])->name('products.lookup');
+            Route::get('/products/{product}', [CatalogueController::class, 'product'])->name('products.show');
+            Route::get('/catalogue', [CatalogueController::class, 'catalogue'])->name('catalogue');
+
             /*
-            | Further module endpoints (styles, orders, …) go here.
+            | Further module endpoints (inventory, orders, …) go here.
             */
         });
     });

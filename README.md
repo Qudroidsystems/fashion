@@ -63,6 +63,7 @@ How it works:
 |--------|---------|-------|
 | Customers (CRM) — SRS §5.3 | `/customers`, `/follow-ups` | Auto numbers (`CUS-00001`, format in House Settings), tags, VIP, style preferences, consent per channel/purpose, notes (sensitive notes need *View customer sensitive notes*), follow-ups, duplicate warning (phone/e-mail/name), merge, timeline, CSV export. Try it with `php artisan db:seed --class=DemoCustomersSeeder`. |
 | Measurements — SRS §5.4/§5.5/§6.1/§6.5 | `/measurements`, `/measurement-templates`, `/measurement-parameters`, customer › Measurements tab, public `/m/{token}` | Starter kit (21 parameters, 5 published templates; `php artisan fhmp:measurement-kit` for existing houses). Values stored in **millimetres**, entered in inches or cm (½ and `38 1/2` accepted). Versioned templates (published versions are frozen; sessions keep their version). Draft → submitted → approved/sent back; approved sessions are read-only and corrected by a superseding session. Changes vs the last approved values are flagged (parameter threshold, else house setting, default 5%) and raise one review follow-up. Secure customer links: hashed 48-char token, expiry, revoke, 10-attempt lock, never show previous values, submissions wait for approval. Daily `fhmp:measurement-reviews` (07:00) reminds staff when approved measurements are older than the house's review interval (default 6 months) — requires the Laravel scheduler (`php artisan schedule:work` locally). |
+| Styles & ready-made catalogue — SRS FR-MEA-006, FR-POS-007 | `/styles`, `/products`, `/catalogue/categories` | **Styles** (bespoke designs, `STY-00001`): category, audience, description, workroom technical notes, up to 12 pictures (first = cover), starting price + optional add-ons, estimated cost (only with *View costing*), lead time, typical fabric, and the measurement templates it needs. Every change is made on a draft; *Publish style* freezes it as a new version and pins the template versions live at that moment, so past orders stay reproducible. **Products** (ready-made, `PRD-00001`): one row per size/colour with price, cost, SKU (automatic if blank), barcode (scan, type or generate EAN-13), reorder level; optional link to the style it was made from. Stock quantities arrive with the Inventory module. Starter categories are created for every new house; demo data: `php artisan db:seed --class=DemoCatalogueSeeder`. Pictures are stored on the `public` disk, so run `php artisan storage:link` once. |
 
 ## API v1
 
@@ -84,6 +85,12 @@ How it works:
 | POST | `/api/v1/measurement-sessions/{id}/submit` · `/approve` · `/reject` (`reason`) | review workflow |
 | GET  | `/api/v1/measurement-sessions/{id}/comparison` | per-value change vs last approved (`delta_mm`, `delta`, `delta_pct`, `flagged`) |
 | POST | `/api/v1/customers/{id}/measurement-requests` · `/api/v1/measurement-requests/{id}/revoke` | create a customer link (URL returned once) / revoke it |
+| GET/POST | `/api/v1/styles` | list (`q`, `category_id`, `status`) / create a style with its first draft |
+| GET/PATCH | `/api/v1/styles/{id}` | live version + draft; PATCH edits the draft (`description`, `technical_notes`, `base_price`, `price_options[]`, `lead_time_days`, `fabric_*`, `template_ids[]`…) |
+| POST | `/api/v1/styles/{id}/versions` · `/api/v1/styles/{id}/images` | start a new draft from the live version / upload pictures (multipart `images[]`) |
+| POST | `/api/v1/style-versions/{id}/publish` | needs *Publish style*; freezes the version (`change_notes` optional) |
+| GET  | `/api/v1/products` · `/api/v1/products/{id}` · `/api/v1/products/lookup?code=` | ready-made products and variants; lookup matches barcode, SKU or product code (for scanning) |
+| GET  | `/api/v1/catalogue` | what customers may see: published styles and products switched on for the catalogue, never costs |
 
 Errors: `{ success:false, code, message, field_errors?, correlation_id }`. Every response
 carries `X-Request-Id`.

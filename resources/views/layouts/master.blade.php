@@ -963,6 +963,15 @@
         {title:'Measurement templates',  url:'{{ route("measurement-templates.index") }}', icon:'mdi-ruler-square', category:'Customers',     keywords:['template','measure','gown','trouser','agbada']},
         {title:'Measurement parameters', url:'{{ route("measurement-parameters.index") }}', icon:'mdi-ruler',     category:'Customers',        keywords:['parameter','measure','neck','chest','range']},
         @endcan
+        @can('View style')
+        {title:'Styles',                 url:'{{ route("styles.index") }}',            icon:'mdi-hanger',         category:'Catalogue',        keywords:['style','design','gown','agbada','catalogue','lookbook']},
+        @endcan
+        @can('Manage style')
+        {title:'New Style',              url:'{{ route("styles.create") }}',           icon:'mdi-plus-box',       category:'Catalogue',        keywords:['add','new','design','style']},
+        @endcan
+        @can('View product')
+        {title:'Ready-made Products',    url:'{{ route("products.index") }}',          icon:'mdi-shopping',       category:'Catalogue',        keywords:['product','sku','barcode','ready','rack','shop']},
+        @endcan
         @can('Create customer')
         {title:'New Customer',           url:'{{ route("customers.create") }}',        icon:'mdi-account-plus',   category:'Customers',        keywords:['add','new','register','client']},
         @endcan
@@ -995,7 +1004,7 @@
 
     /* ── category colours ── */
     var CAT_COLORS = {
-        'General':'#4f8ef7','Customers':'#0d9488','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
+        'General':'#4f8ef7','Customers':'#0d9488','Catalogue':'#c2410c','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
     };
 
     /* ── popular / suggestion chips ── */

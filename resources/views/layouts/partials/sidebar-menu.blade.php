@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View style',       'icon' => 'ri-t-shirt-air-line',     'label' => 'Styles & Catalogue'],
         ['perm' => 'View inventory',   'icon' => 'ri-archive-line',   'label' => 'Inventory'],
         ['perm' => 'View order',       'icon' => 'ri-file-list-3-line',     'label' => 'Orders & Quotes'],
         ['perm' => 'Use POS',          'icon' => 'ri-shopping-cart-2-line', 'label' => 'Point of Sale'],
@@ -30,7 +29,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -68,6 +67,29 @@
                 <li class="nav-item"><a href="{{ route('measurement-templates.index') }}" class="nav-link {{ request()->routeIs('measurement-templates.*') ? 'active' : '' }}">Templates</a></li>
                 <li class="nav-item"><a href="{{ route('measurement-parameters.index') }}" class="nav-link {{ request()->routeIs('measurement-parameters.*') ? 'active' : '' }}">Parameters</a></li>
                 @endcan
+            </ul>
+        </div>
+    </li>
+    @endif
+
+    @if($u->can('View style') || $u->can('View product'))
+    @php $cActive = request()->routeIs('styles.*', 'products.*', 'catalogue-categories.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $cActive ? 'active' : '' }}" href="#sidebarCatalogue" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $cActive ? 'true' : 'false' }}" aria-controls="sidebarCatalogue">
+            <i class="ri-t-shirt-air-line"></i> <span>Catalogue</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $cActive ? 'show' : '' }}" id="sidebarCatalogue">
+            <ul class="nav nav-sm flex-column">
+                @can('View style')
+                <li class="nav-item"><a href="{{ route('styles.index') }}" class="nav-link {{ request()->routeIs('styles.*') ? 'active' : '' }}">Styles</a></li>
+                @endcan
+                @can('View product')
+                <li class="nav-item"><a href="{{ route('products.index') }}" class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">Ready-made products</a></li>
+                @endcan
+                @if($u->can('Manage style') || $u->can('Manage product'))
+                <li class="nav-item"><a href="{{ route('catalogue-categories.index') }}" class="nav-link {{ request()->routeIs('catalogue-categories.*') ? 'active' : '' }}">Categories</a></li>
+                @endif
             </ul>
         </div>
     </li>

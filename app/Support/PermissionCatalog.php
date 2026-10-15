@@ -42,7 +42,7 @@ class PermissionCatalog
             'Manage measurement templates', 'Send measurement request',
         ],
         'Styles & Catalogue' => [
-            'View style', 'Manage style', 'View product', 'Manage product',
+            'View style', 'Manage style', 'Publish style', 'View product', 'Manage product', 'View costing',
         ],
         'Inventory & Procurement' => [
             'View inventory', 'Manage inventory', 'Adjust stock', 'Approve stock adjustment',
@@ -91,7 +91,7 @@ class PermissionCatalog
                 'View branch',
                 'View customer', 'Create customer', 'Update customer', 'Merge customer', 'View customer sensitive notes', 'Export customer',
                 'View measurement', 'Capture measurement', 'Approve measurement', 'Send measurement request',
-                'View style', 'Manage style', 'View product', 'Manage product',
+                'View style', 'Manage style', 'Publish style', 'View product', 'Manage product', 'View costing',
                 'View inventory', 'Manage inventory', 'Adjust stock', 'Approve stock adjustment', 'Issue material',
                 'Manage supplier', 'Manage purchase order', 'Approve purchase order',
                 'View order', 'Create order', 'Update order', 'Cancel order', 'Manage quotation',
@@ -154,7 +154,7 @@ class PermissionCatalog
             'description' => 'Payments, refunds, expenses, receivables and financial reports.',
             'permissions' => [
                 'View dashboard', 'View audit log',
-                'View customer', 'View order', 'View inventory', 'View project',
+                'View customer', 'View order', 'View inventory', 'View project', 'View style', 'View product', 'View costing',
                 'View payment', 'Record payment', 'Approve refund', 'Manage invoice', 'Manage expense', 'View financial reports',
                 'View reports', 'Export reports',
             ],

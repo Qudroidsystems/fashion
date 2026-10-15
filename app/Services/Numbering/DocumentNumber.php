@@ -21,6 +21,8 @@ class DocumentNumber
 {
     public const DEFAULT_FORMATS = [
         'customer'  => 'CUS-{SEQ:5}',
+        'style'     => 'STY-{SEQ:5}',
+        'product'   => 'PRD-{SEQ:5}',
         'quotation' => 'QTE-{YYYY}-{SEQ:5}',
         'order'     => 'ORD-{YYYY}-{SEQ:5}',
         'invoice'   => 'INV-{YYYY}-{SEQ:5}',

@@ -89,7 +89,7 @@ class Tenant extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
+        return $this->logo_path ? asset('storage/' . $this->logo_path) : null;
     }
 
     public function getInitialsAttribute(): string

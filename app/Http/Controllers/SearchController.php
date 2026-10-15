@@ -35,6 +35,23 @@ class SearchController extends Controller
                 ]));
         }
 
+        if ($user->can('View style')) {
+            \App\Models\FashionStyle::where('status', 'active')->search($q)->limit(6)->get(['id', 'public_id', 'name', 'code'])
+                ->each(fn ($s) => $results->push([
+                    'title' => $s->name, 'url' => route('styles.show', $s), 'icon' => 'mdi-hanger',
+                    'category' => 'Styles', 'subtitle' => $s->code,
+                ]));
+        }
+
+        if ($user->can('View product')) {
+            \App\Models\Product::where('status', 'active')->search($q)->limit(6)->get(['id', 'public_id', 'name', 'code'])
+                ->each(fn ($p) => $results->push([
+                    'title' => $p->name,
+                    'url' => $user->can('Manage product') ? route('products.edit', $p) : route('products.index', ['q' => $p->code]),
+                    'icon' => 'mdi-shopping', 'category' => 'Products', 'subtitle' => $p->code,
+                ]));
+        }
+
         if ($user->can('View user')) {
             User::inCurrentTenant()
                 ->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('email', 'like', $like)->orWhere('phone_number', 'like', $like))
