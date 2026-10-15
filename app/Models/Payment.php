@@ -19,7 +19,7 @@ class Payment extends Model
     ];
 
     protected $fillable = [
-        'tenant_id', 'number', 'customer_id', 'branch_id', 'amount', 'method', 'reference', 'status', 'received_at', 'notes',
+        'tenant_id', 'number', 'customer_id', 'branch_id', 'sale_id', 'channel', 'amount', 'method', 'reference', 'status', 'received_at', 'notes',
         'received_by', 'reversed_at', 'reversed_by', 'reversal_reason',
     ];
 

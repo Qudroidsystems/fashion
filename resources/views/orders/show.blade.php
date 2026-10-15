@@ -252,6 +252,7 @@
                             @endif
                         @endforeach
                     @endcan
+                    @include('orders.partials.pay-link', ['target' => 'order', 'model' => $order, 'due' => in_array($order->status, ['draft', 'cancelled']) ? 0 : max(0, $balance)])
                     @can('Manage invoice')
                         @if($unbilled > 0 && ! in_array($order->status, ['draft', 'cancelled']))
                             <button type="button" class="action-btn justify-content-center" data-bs-toggle="collapse" data-bs-target="#invBox"><i class="ri-bill-line"></i>Create invoice</button>

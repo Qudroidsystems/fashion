@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'Use POS',          'icon' => 'ri-shopping-cart-2-line', 'label' => 'Point of Sale'],
         ['perm' => 'View production',  'icon' => 'ri-scissors-cut-line',    'label' => 'Production'],
         ['perm' => 'View project',     'icon' => 'ri-heart-2-line',         'label' => 'Weddings & Projects'],
         ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
@@ -26,7 +25,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -111,6 +110,23 @@
         </div>
     </li>
     @endif
+
+    @can('Use POS')
+    @php $pActive = request()->routeIs('pos.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $pActive ? 'active' : '' }}" href="#sidebarPos" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $pActive ? 'true' : 'false' }}" aria-controls="sidebarPos">
+            <i class="ri-shopping-cart-2-line"></i> <span>Point of Sale</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $pActive ? 'show' : '' }}" id="sidebarPos">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item"><a href="{{ route('pos.terminal') }}" class="nav-link {{ request()->routeIs('pos.terminal') ? 'active' : '' }}">Till</a></li>
+                <li class="nav-item"><a href="{{ route('pos.sales.index') }}" class="nav-link {{ request()->routeIs('pos.sales.*') ? 'active' : '' }}">Sales</a></li>
+                <li class="nav-item"><a href="{{ route('pos.shifts.index') }}" class="nav-link {{ request()->routeIs('pos.shifts.*') ? 'active' : '' }}">Shifts</a></li>
+            </ul>
+        </div>
+    </li>
+    @endcan
 
     @can('View inventory')
     @php $iActive = request()->routeIs('inventory.*', 'suppliers.*', 'purchase-orders.*', 'goods-receipts.*', 'stock-transfers.*', 'stock-adjustments.*', 'material-issues.*'); @endphp

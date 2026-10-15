@@ -118,10 +118,25 @@
                     </div>
                 </x-cb.card>
 
+                @php $ps = $tenant->setting('paystack', []); @endphp
+                <x-cb.card title="Online payments (Paystack)" icon="ri-secure-payment-line" class="mt-3" id="paystack">
+                    <p class="small text-muted">Customers can pay deposits and balances by card or bank transfer through a link you send them. Payments are confirmed only after Paystack verifies them. Get your keys from your Paystack dashboard → Settings → API keys &amp; webhooks.</p>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="d-flex gap-2"><input type="hidden" name="paystack_enabled" value="0"><input type="checkbox" name="paystack_enabled" value="1" @checked(old('paystack_enabled', $ps['enabled'] ?? false))> Accept online payments</label></div>
+                        <div class="col-md-6"><label class="form-label">Public key</label><input name="paystack_public_key" class="form-control font-monospace" maxlength="120" value="{{ old('paystack_public_key', $ps['public_key'] ?? '') }}" placeholder="pk_live_…"></div>
+                        <div class="col-md-6"><label class="form-label">Secret key</label>
+                            <input type="password" name="paystack_secret_key" class="form-control font-monospace" maxlength="120" autocomplete="new-password" placeholder="{{ ! empty($ps['secret_key']) ? '•••••••• saved — type to replace' : 'sk_live_…' }}">
+                            <div class="form-text">Stored encrypted and never shown again.</div></div>
+                        <div class="col-12"><label class="form-label">Webhook URL (paste into Paystack)</label>
+                            <div class="input-group"><input class="form-control font-monospace small" readonly value="{{ route('webhooks.paystack', $tenant->public_id) }}" id="whUrl">
+                                <button type="button" class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('whUrl').value);this.innerText='Copied'">Copy</button></div></div>
+                    </div>
+                </x-cb.card>
+
                 <x-cb.card title="Document numbering" icon="ri-hashtag" class="mt-3">
                     <p class="small text-muted">Tokens: <code>{YYYY}</code> year, <code>{MM}</code> month, <code>{SEQ:5}</code> running number padded to 5 digits. Numbers are unique within your fashion house.</p>
                     <div class="row g-3">
-                        @foreach(['customer' => 'Customer numbers', 'style' => 'Style codes', 'product' => 'Product codes', 'quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts', 'item' => 'Stock item codes', 'supplier' => 'Supplier codes', 'purchase_order' => 'Purchase orders', 'goods_receipt' => 'Goods received notes', 'stock_transfer' => 'Stock transfers', 'stock_adjustment' => 'Stock adjustments & counts', 'material_issue' => 'Material issues'] as $key => $label)
+                        @foreach(['customer' => 'Customer numbers', 'style' => 'Style codes', 'product' => 'Product codes', 'quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts', 'item' => 'Stock item codes', 'supplier' => 'Supplier codes', 'purchase_order' => 'Purchase orders', 'goods_receipt' => 'Goods received notes', 'stock_transfer' => 'Stock transfers', 'stock_adjustment' => 'Stock adjustments & counts', 'material_issue' => 'Material issues', 'sale' => 'POS sales', 'sale_return' => 'POS returns', 'cash_shift' => 'Cash shifts'] as $key => $label)
                             <div class="col-md-6">
                                 <label class="form-label">{{ $label }}</label>
                                 <input type="text" name="numbering[{{ $key }}]" class="form-control font-monospace"

@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
+            'webhooks/*',
         ]);
 
         // Expired-session handling for CSRF failures (redirect to login instead of a bare 419).

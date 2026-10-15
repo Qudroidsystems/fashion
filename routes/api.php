@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CatalogueController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -103,8 +104,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/payments/{payment}/allocate', [OrderController::class, 'allocate'])->middleware('idempotent')->name('payments.allocate');
             Route::post('/payments/{payment}/refund', [OrderController::class, 'refund'])->middleware('idempotent')->name('payments.refund');
 
+            // Point of sale (SRS §8.2)
+            Route::get('/pos/shifts/current', [PosController::class, 'current'])->name('pos.shifts.current');
+            Route::post('/pos/shifts/open', [PosController::class, 'open'])->middleware('idempotent')->name('pos.shifts.open');
+            Route::post('/pos/shifts/{shift}/close', [PosController::class, 'close'])->middleware('idempotent')->name('pos.shifts.close');
+            Route::post('/pos/sales', [PosController::class, 'storeSale'])->name('pos.sales.store');
+            Route::get('/pos/sales/{sale}', [PosController::class, 'showSale'])->name('pos.sales.show');
+
             /*
-            | Further module endpoints (POS, production, …) go here.
+            | Further module endpoints (production, …) go here.
             */
         });
     });

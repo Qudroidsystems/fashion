@@ -58,10 +58,15 @@ class TenantSettingsController extends Controller
             'discount_limit_percent'   => 'nullable|numeric|min:0|max:100',
             'refund_approval_threshold'=> 'nullable|numeric|min:0|max:1000000000',
             'quotation_valid_days'     => 'nullable|integer|min:1|max:365',
+            'paystack_enabled'         => 'nullable|boolean',
+            'paystack_public_key'      => ['nullable', 'string', 'max:120', 'regex:/^pk_(test|live)_[A-Za-z0-9]+$/'],
+            'paystack_secret_key'      => ['nullable', 'string', 'max:120', 'regex:/^sk_(test|live)_[A-Za-z0-9]+$/'],
             'numbering'                => 'nullable|array',
             'numbering.*'              => ['nullable', 'string', 'max:40', 'regex:/\{SEQ(:\d)?\}/'],
         ], [
             'numbering.*.regex' => 'Each number format must contain {SEQ} (for example ORD-{YYYY}-{SEQ:5}).',
+            'paystack_public_key.regex' => 'That does not look like a Paystack public key (pk_test_… or pk_live_…).',
+            'paystack_secret_key.regex' => 'That does not look like a Paystack secret key (sk_test_… or sk_live_…).',
         ]);
 
         $before = $tenant->only(['name', 'email', 'phone', 'address', 'timezone', 'currency_code', 'brand_color', 'logo_path']) + ['settings' => $tenant->settings];
@@ -87,6 +92,17 @@ class TenantSettingsController extends Controller
         $settings['stock_approval_threshold'] = (float) ($data['stock_approval_threshold'] ?? $settings['stock_approval_threshold'] ?? 20000);
         $settings['po_approval_threshold'] = (float) ($data['po_approval_threshold'] ?? $settings['po_approval_threshold'] ?? 100000);
         $settings['allow_negative_stock'] = (bool) ($data['allow_negative_stock'] ?? false);
+        // FR-ADM-003: the secret key is encrypted and never sent back to the browser.
+        $ps = $settings['paystack'] ?? [];
+        $ps['enabled'] = (bool) ($data['paystack_enabled'] ?? false);
+        $ps['public_key'] = $data['paystack_public_key'] ?? ($ps['public_key'] ?? null);
+        if (! empty($data['paystack_secret_key'])) {
+            $ps['secret_key'] = \Illuminate\Support\Facades\Crypt::encryptString($data['paystack_secret_key']);
+        }
+        if ($ps['enabled'] && (empty($ps['public_key']) || empty($ps['secret_key']))) {
+            return back()->withInput()->withErrors(['paystack_secret_key' => 'Add both Paystack keys to turn on online payments.']);
+        }
+        $settings['paystack'] = $ps;
         foreach (['deposit_percent' => 50, 'discount_limit_percent' => 10, 'refund_approval_threshold' => 0, 'quotation_valid_days' => 14] as $k => $default) {
             $settings[$k] = isset($data[$k]) ? (float) $data[$k] : ($settings[$k] ?? $default);
         }
@@ -104,7 +120,15 @@ class TenantSettingsController extends Controller
         ])->save();
 
         $after = $tenant->only(['name', 'email', 'phone', 'address', 'timezone', 'currency_code', 'brand_color', 'logo_path']) + ['settings' => $tenant->settings];
-        [$b, $a] = AuditLogger::diff($before, $after);
+        // Never put secrets in the audit trail — only whether the key changed.
+        $mask = function (array $snap) {
+            if (isset($snap['settings']['paystack']['secret_key'])) {
+                $snap['settings']['paystack']['secret_key'] = 'set:' . substr(hash('sha256', $snap['settings']['paystack']['secret_key']), 0, 8);
+            }
+
+            return $snap;
+        };
+        [$b, $a] = AuditLogger::diff($mask($before), $mask($after));
         if ($a) {
             AuditLogger::log('tenant.settings_updated', $tenant, $b, $a);
         }
