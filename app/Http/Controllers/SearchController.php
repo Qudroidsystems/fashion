@@ -52,6 +52,24 @@ class SearchController extends Controller
                 ]));
         }
 
+        if ($user->can('View inventory')) {
+            \App\Models\InventoryItem::active()->search($q)->limit(6)->get(['id', 'public_id', 'name', 'code', 'unit'])
+                ->each(fn ($i) => $results->push([
+                    'title' => $i->name, 'url' => route('inventory.items.show', $i), 'icon' => 'mdi-package-variant',
+                    'category' => 'Stock', 'subtitle' => $i->code,
+                ]));
+            \App\Models\Supplier::active()->search($q)->limit(4)->get(['id', 'public_id', 'name', 'code'])
+                ->each(fn ($s) => $results->push([
+                    'title' => $s->name, 'url' => route('suppliers.edit', $s), 'icon' => 'mdi-truck',
+                    'category' => 'Suppliers', 'subtitle' => $s->code,
+                ]));
+            \App\Models\PurchaseOrder::where('number', 'like', $like)->limit(4)->get(['id', 'public_id', 'number', 'status'])
+                ->each(fn ($po) => $results->push([
+                    'title' => $po->number, 'url' => route('purchase-orders.show', $po), 'icon' => 'mdi-file-document-outline',
+                    'category' => 'Purchase orders', 'subtitle' => $po->status_label,
+                ]));
+        }
+
         if ($user->can('View user')) {
             User::inCurrentTenant()
                 ->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('email', 'like', $like)->orWhere('phone_number', 'like', $like))

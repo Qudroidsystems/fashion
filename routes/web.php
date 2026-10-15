@@ -99,4 +99,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/customers.php';
     require __DIR__ . '/modules/measurements.php';
     require __DIR__ . '/modules/catalogue.php';
+    require __DIR__ . '/modules/inventory.php';
 });

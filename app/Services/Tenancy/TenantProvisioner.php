@@ -141,6 +141,9 @@ class TenantProvisioner
             'measurement_display_unit' => 'in',            // storage is canonical millimetres (SRS §3.3)
             'measurement_change_threshold_percent' => 5,  // flag a length that moves more than this
             'measurement_review_months' => 6,              // remind to re-measure after this long
+            'allow_negative_stock' => false,                // FR-INV-004: block issues/sales beyond on-hand
+            'stock_approval_threshold' => 20000,            // §9: adjustments worth more need a second person
+            'po_approval_threshold' => 100000,              // POs above this need someone other than the requester
             'numbering' => [
                 'customer'  => 'CUS-{SEQ:5}',
                 'order'     => 'ORD-{YYYY}-{SEQ:5}',

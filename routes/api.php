@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogueController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -68,8 +69,25 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/products/{product}', [CatalogueController::class, 'product'])->name('products.show');
             Route::get('/catalogue', [CatalogueController::class, 'catalogue'])->name('catalogue');
 
+            // Inventory & procurement (SRS §8.2)
+            Route::get('/inventory-items', [InventoryController::class, 'items'])->name('inventory-items.index');
+            Route::post('/inventory-items', [InventoryController::class, 'storeItem'])->middleware('idempotent')->name('inventory-items.store');
+            Route::get('/inventory-items/{item}', [InventoryController::class, 'item'])->name('inventory-items.show');
+            Route::get('/stock-balances', [InventoryController::class, 'balances'])->name('stock-balances.index');
+            Route::get('/stock-movements', [InventoryController::class, 'movements'])->name('stock-movements.index');
+            Route::post('/stock-transfers', [InventoryController::class, 'transfer'])->middleware('idempotent')->name('stock-transfers.store');
+            Route::post('/stock-counts', [InventoryController::class, 'count'])->middleware('idempotent')->name('stock-counts.store');
+            Route::post('/material-issues', [InventoryController::class, 'issue'])->middleware('idempotent')->name('material-issues.store');
+            Route::get('/suppliers', [InventoryController::class, 'suppliers'])->name('suppliers.index');
+            Route::get('/purchase-orders', [InventoryController::class, 'purchaseOrders'])->name('purchase-orders.index');
+            Route::post('/purchase-orders', [InventoryController::class, 'storePurchaseOrder'])->middleware('idempotent')->name('purchase-orders.store');
+            Route::get('/purchase-orders/{purchaseOrder}', [InventoryController::class, 'purchaseOrder'])->name('purchase-orders.show');
+            Route::post('/purchase-orders/{purchaseOrder}/submit', [InventoryController::class, 'submitPurchaseOrder'])->name('purchase-orders.submit');
+            Route::post('/purchase-orders/{purchaseOrder}/approve', [InventoryController::class, 'approvePurchaseOrder'])->middleware('idempotent')->name('purchase-orders.approve');
+            Route::post('/goods-receipts', [InventoryController::class, 'receive'])->middleware('idempotent')->name('goods-receipts.store');
+
             /*
-            | Further module endpoints (inventory, orders, …) go here.
+            | Further module endpoints (orders, production, …) go here.
             */
         });
     });

@@ -27,6 +27,13 @@ class DocumentNumber
         'order'     => 'ORD-{YYYY}-{SEQ:5}',
         'invoice'   => 'INV-{YYYY}-{SEQ:5}',
         'receipt'   => 'RCP-{YYYY}-{SEQ:5}',
+        'item'             => 'ITM-{SEQ:5}',
+        'supplier'         => 'SUP-{SEQ:4}',
+        'purchase_order'   => 'PO-{YYYY}-{SEQ:5}',
+        'goods_receipt'    => 'GRN-{YYYY}-{SEQ:5}',
+        'stock_transfer'   => 'TRF-{YYYY}-{SEQ:5}',
+        'stock_adjustment' => 'ADJ-{YYYY}-{SEQ:5}',
+        'material_issue'   => 'MIS-{YYYY}-{SEQ:5}',
     ];
 
     public static function next(string $key, ?Tenant $tenant = null): string
