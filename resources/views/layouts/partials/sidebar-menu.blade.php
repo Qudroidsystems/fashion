@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View inventory',   'icon' => 'ri-archive-line',   'label' => 'Inventory'],
         ['perm' => 'View order',       'icon' => 'ri-file-list-3-line',     'label' => 'Orders & Quotes'],
         ['perm' => 'Use POS',          'icon' => 'ri-shopping-cart-2-line', 'label' => 'Point of Sale'],
         ['perm' => 'View production',  'icon' => 'ri-scissors-cut-line',    'label' => 'Production'],
@@ -29,7 +28,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -94,6 +93,25 @@
         </div>
     </li>
     @endif
+
+    @can('View inventory')
+    @php $iActive = request()->routeIs('inventory.*', 'suppliers.*', 'purchase-orders.*', 'goods-receipts.*', 'stock-transfers.*', 'stock-adjustments.*', 'material-issues.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $iActive ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $iActive ? 'true' : 'false' }}" aria-controls="sidebarInventory">
+            <i class="ri-archive-line"></i> <span>Inventory</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $iActive ? 'show' : '' }}" id="sidebarInventory">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item"><a href="{{ route('inventory.index') }}" class="nav-link {{ request()->routeIs('inventory.index', 'inventory.items.*') ? 'active' : '' }}">Stock</a></li>
+                <li class="nav-item"><a href="{{ route('purchase-orders.index') }}" class="nav-link {{ request()->routeIs('purchase-orders.*', 'goods-receipts.*') ? 'active' : '' }}">Purchasing</a></li>
+                <li class="nav-item"><a href="{{ route('material-issues.index') }}" class="nav-link {{ request()->routeIs('material-issues.*') ? 'active' : '' }}">Material issues</a></li>
+                <li class="nav-item"><a href="{{ route('stock-adjustments.index') }}" class="nav-link {{ request()->routeIs('stock-adjustments.*', 'stock-transfers.*') ? 'active' : '' }}">Counts & adjustments</a></li>
+                <li class="nav-item"><a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">Suppliers</a></li>
+            </ul>
+        </div>
+    </li>
+    @endcan
 
     @if($visibleSoon->count())
         @foreach($visibleSoon as $m)

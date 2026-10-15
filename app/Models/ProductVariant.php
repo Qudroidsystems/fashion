@@ -22,6 +22,24 @@ class ProductVariant extends Model
         'is_active'     => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        // Its stock item keeps the history: switch it off rather than lose movements.
+        static::deleting(function (ProductVariant $v) {
+            $item = InventoryItem::where('product_variant_id', $v->id)->first();
+            if ($item) {
+                StockMovement::where('item_id', $item->id)->exists()
+                    ? $item->update(['is_active' => false, 'product_variant_id' => null])
+                    : $item->delete();
+            }
+        });
+    }
+
+    public function stockItem(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(InventoryItem::class);
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

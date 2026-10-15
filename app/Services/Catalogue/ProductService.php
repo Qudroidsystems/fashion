@@ -64,7 +64,8 @@ class ProductService
                 $variant->save();
                 $keep[] = $variant->id;
             }
-            $product->variants()->whereNotIn('id', $keep)->delete();
+            $product->variants()->whereNotIn('id', $keep)->get()->each->delete();
+            app(\App\Services\Inventory\ItemService::class)->syncProduct($product->fresh('variants', 'category'));
 
             $creating
                 ? AuditLogger::log('product.created', $product, after: $product->only(['code', 'name']) + ['variants' => count($keep)])

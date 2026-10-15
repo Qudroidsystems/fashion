@@ -972,6 +972,18 @@
         @can('View product')
         {title:'Ready-made Products',    url:'{{ route("products.index") }}',          icon:'mdi-shopping',       category:'Catalogue',        keywords:['product','sku','barcode','ready','rack','shop']},
         @endcan
+        @can('View inventory')
+        {title:'Stock',                  url:'{{ route("inventory.index") }}',         icon:'mdi-package-variant', category:'Inventory',       keywords:['stock','inventory','fabric','lace','material','store','warehouse','low']},
+        {title:'Purchase orders',        url:'{{ route("purchase-orders.index") }}',   icon:'mdi-file-document-outline', category:'Inventory', keywords:['purchase','order','po','buy','supplier']},
+        {title:'Stock ledger',           url:'{{ route("inventory.movements") }}',     icon:'mdi-format-list-bulleted', category:'Inventory',  keywords:['ledger','movement','history','audit']},
+        {title:'Suppliers',              url:'{{ route("suppliers.index") }}',         icon:'mdi-truck',          category:'Inventory',        keywords:['supplier','vendor','market']},
+        @endcan
+        @can('Issue material')
+        {title:'Issue material',         url:'{{ route("material-issues.create") }}',  icon:'mdi-content-cut',    category:'Inventory',        keywords:['issue','production','tailor','workroom']},
+        @endcan
+        @can('Adjust stock')
+        {title:'Count stock',            url:'{{ route("stock-adjustments.create", ["kind" => "count"]) }}', icon:'mdi-clipboard-check-outline', category:'Inventory', keywords:['count','stocktake','check']},
+        @endcan
         @can('Create customer')
         {title:'New Customer',           url:'{{ route("customers.create") }}',        icon:'mdi-account-plus',   category:'Customers',        keywords:['add','new','register','client']},
         @endcan
@@ -1004,7 +1016,7 @@
 
     /* ── category colours ── */
     var CAT_COLORS = {
-        'General':'#4f8ef7','Customers':'#0d9488','Catalogue':'#c2410c','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
+        'General':'#4f8ef7','Customers':'#0d9488','Inventory':'#b45309','Catalogue':'#c2410c','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
     };
 
     /* ── popular / suggestion chips ── */

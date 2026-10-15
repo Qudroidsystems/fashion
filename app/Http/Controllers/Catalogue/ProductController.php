@@ -75,6 +75,7 @@ class ProductController extends Controller
     {
         $to = $product->status === 'archived' ? 'active' : 'archived';
         $product->update(['status' => $to]);
+        app(\App\Services\Inventory\ItemService::class)->syncProduct($product);
         AuditLogger::log('product.' . ($to === 'archived' ? 'archived' : 'restored'), $product);
 
         return back()->with('success', $to === 'archived' ? 'Product archived.' : 'Product restored.');

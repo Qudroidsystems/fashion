@@ -66,7 +66,7 @@
                                     <option value="{{ $code }}" @selected(old('currency_code', $tenant->currency_code) === $code)>{{ $label }}</option>
                                 @endforeach
                             </select>
-                            <div class="form-text">Amounts are stored in minor units (e.g. kobo).</div>
+                            <div class="form-text">Used for prices, costs and stock value.</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Measurement display unit *</label>
@@ -80,10 +80,31 @@
                     </div>
                 </x-cb.card>
 
+                <x-cb.card title="Stock control" icon="ri-archive-line" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Adjustment approval limit</label>
+                            <div class="input-group"><span class="input-group-text">{{ \App\Support\Money::symbol($tenant->currency_code) }}</span>
+                                <input type="number" min="0" step="1" name="stock_approval_threshold" class="form-control" value="{{ old('stock_approval_threshold', $tenant->setting('stock_approval_threshold', 20000)) }}"></div>
+                            <div class="form-text">Stock adjustments, wastage and count differences worth more than this must be approved by someone other than the person who submitted them. In a house with only one approver, that person may approve their own and it is noted in the audit log.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Purchase order approval limit</label>
+                            <div class="input-group"><span class="input-group-text">{{ \App\Support\Money::symbol($tenant->currency_code) }}</span>
+                                <input type="number" min="0" step="1" name="po_approval_threshold" class="form-control" value="{{ old('po_approval_threshold', $tenant->setting('po_approval_threshold', 100000)) }}"></div>
+                            <div class="form-text">Purchase orders above this need a second person to approve them.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="d-flex gap-2"><input type="hidden" name="allow_negative_stock" value="0"><input type="checkbox" name="allow_negative_stock" value="1" @checked(old('allow_negative_stock', $tenant->setting('allow_negative_stock', false)))> Allow stock to go below zero</label>
+                            <div class="form-text">Leave off so the system refuses to issue or sell more than you have. Turn on only while you are still entering opening balances.</div>
+                        </div>
+                    </div>
+                </x-cb.card>
+
                 <x-cb.card title="Document numbering" icon="ri-hashtag" class="mt-3">
                     <p class="small text-muted">Tokens: <code>{YYYY}</code> year, <code>{MM}</code> month, <code>{SEQ:5}</code> running number padded to 5 digits. Numbers are unique within your fashion house.</p>
                     <div class="row g-3">
-                        @foreach(['customer' => 'Customer numbers', 'style' => 'Style codes', 'product' => 'Product codes', 'quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts'] as $key => $label)
+                        @foreach(['customer' => 'Customer numbers', 'style' => 'Style codes', 'product' => 'Product codes', 'quotation' => 'Quotations', 'order' => 'Orders', 'invoice' => 'Invoices', 'receipt' => 'Receipts', 'item' => 'Stock item codes', 'supplier' => 'Supplier codes', 'purchase_order' => 'Purchase orders', 'goods_receipt' => 'Goods received notes', 'stock_transfer' => 'Stock transfers', 'stock_adjustment' => 'Stock adjustments & counts', 'material_issue' => 'Material issues'] as $key => $label)
                             <div class="col-md-6">
                                 <label class="form-label">{{ $label }}</label>
                                 <input type="text" name="numbering[{{ $key }}]" class="form-control font-monospace"

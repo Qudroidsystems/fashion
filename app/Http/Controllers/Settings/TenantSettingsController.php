@@ -51,6 +51,9 @@ class TenantSettingsController extends Controller
             'logo'                     => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
             'remove_logo'              => 'nullable|boolean',
             'measurement_display_unit' => ['required', Rule::in(array_keys(self::MEASUREMENT_UNITS))],
+            'stock_approval_threshold' => 'nullable|numeric|min:0|max:1000000000',
+            'po_approval_threshold'    => 'nullable|numeric|min:0|max:1000000000',
+            'allow_negative_stock'     => 'nullable|boolean',
             'numbering'                => 'nullable|array',
             'numbering.*'              => ['nullable', 'string', 'max:40', 'regex:/\{SEQ(:\d)?\}/'],
         ], [
@@ -77,6 +80,9 @@ class TenantSettingsController extends Controller
 
         $settings = $tenant->settings ?? [];
         $settings['measurement_display_unit'] = $data['measurement_display_unit'];
+        $settings['stock_approval_threshold'] = (float) ($data['stock_approval_threshold'] ?? $settings['stock_approval_threshold'] ?? 20000);
+        $settings['po_approval_threshold'] = (float) ($data['po_approval_threshold'] ?? $settings['po_approval_threshold'] ?? 100000);
+        $settings['allow_negative_stock'] = (bool) ($data['allow_negative_stock'] ?? false);
         $settings['numbering'] = array_filter(array_merge($settings['numbering'] ?? [], $data['numbering'] ?? []));
 
         $tenant->fill([
