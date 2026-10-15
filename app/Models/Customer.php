@@ -117,6 +117,16 @@ class Customer extends Model
         return $this->hasMany(FollowUpTask::class);
     }
 
+    public function measurementSessions(): HasMany
+    {
+        return $this->hasMany(MeasurementSession::class);
+    }
+
+    public function measurementRequests(): HasMany
+    {
+        return $this->hasMany(MeasurementRequest::class);
+    }
+
     /* Scopes -------------------------------------------------------------- */
 
     public function scopeActive(Builder $q): Builder

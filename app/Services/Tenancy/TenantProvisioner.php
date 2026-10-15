@@ -52,6 +52,7 @@ class TenantProvisioner
                 ]);
 
                 $this->syncDefaultRoles($tenant);
+                app(\App\Services\Measurements\MeasurementStarterKit::class)->install($tenant);
 
                 TenantMembership::create([
                     'user_id'   => $owner->id,
@@ -136,7 +137,9 @@ class TenantProvisioner
     protected function defaultSettings(): array
     {
         return [
-            'measurement_display_unit' => 'in',   // canonical storage is cm (SRS §3.3)
+            'measurement_display_unit' => 'in',            // storage is canonical millimetres (SRS §3.3)
+            'measurement_change_threshold_percent' => 5,  // flag a length that moves more than this
+            'measurement_review_months' => 6,              // remind to re-measure after this long
             'numbering' => [
                 'customer'  => 'CUS-{SEQ:5}',
                 'order'     => 'ORD-{YYYY}-{SEQ:5}',

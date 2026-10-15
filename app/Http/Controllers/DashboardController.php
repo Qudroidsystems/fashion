@@ -75,7 +75,7 @@ class DashboardController extends Controller
     {
         return [
             ['icon' => 'ri-user-heart-line',      'name' => 'Customers (CRM)',        'phase' => 2, 'desc' => 'Customer profiles, preferences, consent, follow-ups and timeline.', 'route' => 'customers.index'],
-            ['icon' => 'ri-ruler-2-line',         'name' => 'Measurements',           'phase' => 2, 'desc' => 'Versioned templates, staff capture, approval, comparison and secure request links.'],
+            ['icon' => 'ri-ruler-2-line',         'name' => 'Measurements',           'phase' => 2, 'desc' => 'Versioned templates, staff capture, approval, comparison and secure request links.', 'route' => 'measurements.index'],
             ['icon' => 'ri-t-shirt-air-line',     'name' => 'Styles & Catalogue',     'phase' => 3, 'desc' => 'Style catalogue, versions and ready-made products.'],
             ['icon' => 'ri-archive-line',         'name' => 'Inventory & Purchasing', 'phase' => 3, 'desc' => 'Fabric and accessories, suppliers, purchase orders and the stock ledger.'],
             ['icon' => 'ri-file-list-3-line',     'name' => 'Orders & Quotes',        'phase' => 4, 'desc' => 'Quotations, garment lines, invoices, deposits and balances.'],

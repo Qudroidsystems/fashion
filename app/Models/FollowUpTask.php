@@ -14,7 +14,7 @@ class FollowUpTask extends Model
 
     protected $fillable = [
         'tenant_id', 'customer_id', 'title', 'details', 'due_at', 'assigned_to',
-        'status', 'completed_at', 'completed_by', 'created_by',
+        'status', 'source_key', 'completed_at', 'completed_by', 'created_by',
     ];
 
     protected $casts = ['due_at' => 'datetime', 'completed_at' => 'datetime'];

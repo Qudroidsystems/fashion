@@ -956,6 +956,13 @@
         {title:'Customers',              url:'{{ route("customers.index") }}',         icon:'mdi-account-heart',  category:'Customers',        keywords:['client','customer','crm','contact','vip','bride']},
         {title:'Follow-ups',             url:'{{ route("follow-ups.index") }}',        icon:'mdi-alarm',          category:'Customers',        keywords:['follow','call','reminder','todo','task']},
         @endcan
+        @can('View measurement')
+        {title:'Measurements review',    url:'{{ route("measurements.index") }}',      icon:'mdi-tape-measure',   category:'Customers',        keywords:['measure','measurement','size','approve','review','bust','waist']},
+        @endcan
+        @can('Manage measurement templates')
+        {title:'Measurement templates',  url:'{{ route("measurement-templates.index") }}', icon:'mdi-ruler-square', category:'Customers',     keywords:['template','measure','gown','trouser','agbada']},
+        {title:'Measurement parameters', url:'{{ route("measurement-parameters.index") }}', icon:'mdi-ruler',     category:'Customers',        keywords:['parameter','measure','neck','chest','range']},
+        @endcan
         @can('Create customer')
         {title:'New Customer',           url:'{{ route("customers.create") }}',        icon:'mdi-account-plus',   category:'Customers',        keywords:['add','new','register','client']},
         @endcan

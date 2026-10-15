@@ -33,6 +33,12 @@ Route::get('/refresh-csrf', function () {
     return response()->json(['csrf_token' => csrf_token()]);
 })->name('refresh.csrf');
 
+// Customer measurement links (no login; token + expiry + rate limit — SRS §5.5)
+Route::get('/m/{token}', [\App\Http\Controllers\Measurements\PublicMeasurementController::class, 'form'])
+    ->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:30,1')->name('measure.form');
+Route::post('/m/{token}', [\App\Http\Controllers\Measurements\PublicMeasurementController::class, 'submit'])
+    ->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name('measure.submit');
+
 /*
 |--------------------------------------------------------------------------
 | Signed-in (tenant context is set by ResolveTenant in the web group)
@@ -91,4 +97,5 @@ Route::middleware('auth')->group(function () {
 
     // ── Business modules (SRS roadmap), one route file each ─────────────
     require __DIR__ . '/modules/customers.php';
+    require __DIR__ . '/modules/measurements.php';
 });
