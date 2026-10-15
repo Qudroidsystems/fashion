@@ -120,7 +120,9 @@
                 <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#timeline"><i class="ri-history-line me-1"></i>Timeline</a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#notes"><i class="ri-sticky-note-line me-1"></i>Notes <span class="badge bg-light text-body ms-1">{{ $notes->count() }}</span></a></li>
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#follow-ups"><i class="ri-alarm-line me-1"></i>Follow-ups <span class="badge bg-light text-body ms-1">{{ $followUps->where('status', 'open')->count() }}</span></a></li>
-                <li class="nav-item"><a class="nav-link disabled" href="javascript:void(0)" title="Coming with the Measurements module"><i class="ri-ruler-2-line me-1"></i>Measurements</a></li>
+                @can('View measurement')
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#measurements"><i class="ri-ruler-2-line me-1"></i>Measurements <span class="badge bg-light text-body ms-1">{{ $mCurrent->count() }}</span></a></li>
+                @endcan
                 <li class="nav-item"><a class="nav-link disabled" href="javascript:void(0)" title="Coming with the Orders module"><i class="ri-file-list-3-line me-1"></i>Orders</a></li>
             </ul>
 
@@ -233,6 +235,10 @@
                         @endforelse
                     </x-cb.card>
                 </div>
+
+                @can('View measurement')
+                @include('customers.partials.measurements')
+                @endcan
             </div>
         </div>
     </div>

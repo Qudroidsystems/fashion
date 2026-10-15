@@ -57,6 +57,13 @@ How it works:
    menu item in `resources/views/layouts/partials/sidebar-menu.blade.php` (replace the "Soon" entry).
 6. Tests: copy `tests/Feature/TenantIsolationTest.php` for the new resource.
 
+## Modules built
+
+| Module | Screens | Notes |
+|--------|---------|-------|
+| Customers (CRM) — SRS §5.3 | `/customers`, `/follow-ups` | Auto numbers (`CUS-00001`, format in House Settings), tags, VIP, style preferences, consent per channel/purpose, notes (sensitive notes need *View customer sensitive notes*), follow-ups, duplicate warning (phone/e-mail/name), merge, timeline, CSV export. Try it with `php artisan db:seed --class=DemoCustomersSeeder`. |
+| Measurements — SRS §5.4/§5.5/§6.1/§6.5 | `/measurements`, `/measurement-templates`, `/measurement-parameters`, customer › Measurements tab, public `/m/{token}` | Starter kit (21 parameters, 5 published templates; `php artisan fhmp:measurement-kit` for existing houses). Values stored in **millimetres**, entered in inches or cm (½ and `38 1/2` accepted). Versioned templates (published versions are frozen; sessions keep their version). Draft → submitted → approved/sent back; approved sessions are read-only and corrected by a superseding session. Changes vs the last approved values are flagged (parameter threshold, else house setting, default 5%) and raise one review follow-up. Secure customer links: hashed 48-char token, expiry, revoke, 10-attempt lock, never show previous values, submissions wait for approval. Daily `fhmp:measurement-reviews` (07:00) reminds staff when approved measurements are older than the house's review interval (default 6 months) — requires the Laravel scheduler (`php artisan schedule:work` locally). |
+
 ## API v1
 
 | Method | Endpoint | Notes |
@@ -67,6 +74,16 @@ How it works:
 | POST | `/api/v1/auth/password` | change password (revokes other devices) |
 | GET  | `/api/v1/tenants` | houses the user can work in |
 | GET  | `/api/v1/tenants/current` | settings + branches of the current house (`X-Tenant` optional) |
+| GET/POST | `/api/v1/customers` | search (`q`) / create — 409 `possible_duplicate` unless `confirm_duplicate=true`; honours `Idempotency-Key` |
+| GET/PATCH | `/api/v1/customers/{id}` | `{id}` = customer public id; PATCH is a partial update |
+| GET  | `/api/v1/customers/{id}/timeline` | notes, follow-ups and changes |
+| POST | `/api/v1/customers/{id}/follow-ups` | create a follow-up (`Idempotency-Key` supported) |
+| GET  | `/api/v1/measurement-templates` | usable templates with their current version's parameters |
+| GET/POST | `/api/v1/customers/{id}/measurement-sessions` | list / create. Body: `template_version_id`, `unit`, `values` keyed by code (`{"waist":"32","thigh":{"left":"22","right":"22 1/4"}}`), optional `submit=true` |
+| GET/PATCH | `/api/v1/measurement-sessions/{id}` | `?unit=cm` for display; PATCH only for draft/sent-back (409 otherwise), only sent codes change |
+| POST | `/api/v1/measurement-sessions/{id}/submit` · `/approve` · `/reject` (`reason`) | review workflow |
+| GET  | `/api/v1/measurement-sessions/{id}/comparison` | per-value change vs last approved (`delta_mm`, `delta`, `delta_pct`, `flagged`) |
+| POST | `/api/v1/customers/{id}/measurement-requests` · `/api/v1/measurement-requests/{id}/revoke` | create a customer link (URL returned once) / revoke it |
 
 Errors: `{ success:false, code, message, field_errors?, correlation_id }`. Every response
 carries `X-Request-Id`.

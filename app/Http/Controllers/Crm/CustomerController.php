@@ -122,7 +122,30 @@ class CustomerController extends Controller
             'channels'  => CustomerConsent::CHANNELS,
             'purposes'  => CustomerConsent::PURPOSES,
             'tz'        => CurrentTenant::get()->timezone,
-        ]);
+        ] + $this->measurementData($customer, $user));
+    }
+
+    /** Measurements tab: current approved set per template, history, open links (SRS §5.4/§5.5). */
+    protected function measurementData(Customer $customer, $user): array
+    {
+        if (! $user->can('View measurement')) {
+            return ['mSessions' => collect(), 'mCurrent' => collect(), 'mRequests' => collect(), 'mTemplates' => collect()];
+        }
+
+        $sessions = \App\Models\MeasurementSession::where('customer_id', $customer->id)
+            ->with(['templateVersion.template', 'measurer:id,name', 'values.templateParameter'])
+            ->latest('measured_at')->get();
+
+        return [
+            'mSessions'  => $sessions,
+            'mCurrent'   => $sessions->where('status', 'approved')
+                ->groupBy(fn ($s) => $s->templateVersion->template_id)
+                ->map(fn ($g) => $g->sortByDesc('verified_at')->first())->values(),
+            'mRequests'  => $user->can('Send measurement request')
+                ? \App\Models\MeasurementRequest::where('customer_id', $customer->id)->with('templateVersion.template', 'creator:id,name', 'session')->latest()->limit(10)->get()
+                : collect(),
+            'mTemplates' => \App\Models\MeasurementTemplate::usable()->with('currentVersion')->orderBy('name')->get(),
+        ];
     }
 
     public function edit(Customer $customer): View

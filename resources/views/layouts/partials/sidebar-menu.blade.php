@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View measurement', 'icon' => 'ri-ruler-2-line',         'label' => 'Measurements'],
         ['perm' => 'View style',       'icon' => 'ri-t-shirt-air-line',     'label' => 'Styles & Catalogue'],
         ['perm' => 'View inventory',   'icon' => 'ri-archive-line',   'label' => 'Inventory'],
         ['perm' => 'View order',       'icon' => 'ri-file-list-3-line',     'label' => 'Orders & Quotes'],
@@ -31,7 +30,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -52,6 +51,27 @@
         </div>
     </li>
     @endcan
+
+    @if($u->can('View measurement') || $u->can('Manage measurement templates'))
+    @php $mActive = request()->routeIs('measurements.*', 'measurement-templates.*', 'measurement-parameters.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $mActive ? 'active' : '' }}" href="#sidebarMeasurements" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $mActive ? 'true' : 'false' }}" aria-controls="sidebarMeasurements">
+            <i class="ri-ruler-2-line"></i> <span>Measurements</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $mActive ? 'show' : '' }}" id="sidebarMeasurements">
+            <ul class="nav nav-sm flex-column">
+                @can('View measurement')
+                <li class="nav-item"><a href="{{ route('measurements.index') }}" class="nav-link {{ request()->routeIs('measurements.*') ? 'active' : '' }}">Review queue</a></li>
+                @endcan
+                @can('Manage measurement templates')
+                <li class="nav-item"><a href="{{ route('measurement-templates.index') }}" class="nav-link {{ request()->routeIs('measurement-templates.*') ? 'active' : '' }}">Templates</a></li>
+                <li class="nav-item"><a href="{{ route('measurement-parameters.index') }}" class="nav-link {{ request()->routeIs('measurement-parameters.*') ? 'active' : '' }}">Parameters</a></li>
+                @endcan
+            </ul>
+        </div>
+    </li>
+    @endif
 
     @if($visibleSoon->count())
         @foreach($visibleSoon as $m)
