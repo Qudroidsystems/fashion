@@ -7,10 +7,13 @@
 @php
     use App\Support\PermissionMeta;
     $checkedIds = collect($checkedIds ?? [])->map(fn ($v) => (int) $v)->all();
+    // Groups follow the module order of App\Support\PermissionCatalog.
+    $moduleOrder = array_flip(array_keys(\App\Support\PermissionCatalog::GROUPS));
     $groups = \Spatie\Permission\Models\Permission::where('guard_name', 'web')
-        ->orderBy('title')->orderBy('name')->get()
-        ->groupBy(fn ($p) => $p->title ?: 'Other')->sortKeys();
-    $verbOrder = ['View' => 1, 'Preview' => 1, 'Create' => 2, 'Add' => 2, 'Edit' => 3, 'Assign' => 3, 'Approve' => 4, 'Submit' => 4, 'Post' => 4, 'Release' => 4, 'Pay' => 4, 'Manage' => 5, 'Close' => 6, 'Delete' => 7, 'Remove' => 7];
+        ->orderBy('name')->get()
+        ->groupBy(fn ($p) => $p->title ?: 'Other')
+        ->sortBy(fn ($perms, $group) => $moduleOrder[$group] ?? 999);
+    $verbOrder = ['View' => 1, 'Preview' => 1, 'Access' => 1, 'Create' => 2, 'Add' => 2, 'Open' => 2, 'Edit' => 3, 'Assign' => 3, 'Issue' => 3, 'Approve' => 4, 'Submit' => 4, 'Post' => 4, 'Release' => 4, 'Pay' => 4, 'Send' => 4, 'Manage' => 5, 'Close' => 6, 'Delete' => 7, 'Remove' => 7];
     $totalPerms = $groups->flatten()->count();
 @endphp
 

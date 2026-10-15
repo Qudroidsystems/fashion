@@ -14,11 +14,6 @@ return [
     |
     */
 
-    // Shared key the school's public website (separate project) sends as X-Website-Key.
-    'website' => [
-        'key' => env('WEBSITE_API_KEY'),
-    ],
-
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
@@ -41,12 +36,9 @@ return [
     ],
 
     'twilio' => [
-    'sid' => env('TWILIO_SID'),
-    'auth_token' => env('TWILIO_AUTH_TOKEN'),
-    'phone_number' => env('TWILIO_PHONE_NUMBER'),
-    ],
-    'device' => [
-        'key' => env('DEVICE_API_KEY'),
+        'sid' => env('TWILIO_SID'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'),
+        'phone_number' => env('TWILIO_PHONE_NUMBER'),
     ],
 
     'paystack' => [
@@ -60,24 +52,11 @@ return [
         'live_public_key' => env('PAYSTACK_LIVE_PUBLIC_KEY'),
     ],
 
-    // Push notifications to the Vite Schools mobile app (Firebase Cloud Messaging).
+    // Push notifications to the staff and customer mobile apps (Firebase Cloud Messaging).
     'fcm' => [
-        'enabled'     => env('FCM_ENABLED', true),
+        'enabled'     => env('FCM_ENABLED', false),
         'credentials' => env('FCM_CREDENTIALS', storage_path('app/fcm-service-account.json')),
         'project_id'  => env('FCM_PROJECT_ID'),
-    ],
-
-    // Lesson reminders pushed to teachers before each class.
-    'mobile' => [
-        // Which Vite Schools app this portal pairs with: 'dynamic' (assessments set per class
-        // category — Vite Schools app) or 'fixed' (CA1, CA2, CA3, Exam — TopClass Schools app).
-        'score_model' => 'dynamic',
-        // Show teachers' phone/e-mail to parents in the app's "Teachers" screen.
-        'share_teacher_contacts' => env('MOBILE_SHARE_TEACHER_CONTACTS', true),
-    ],
-
-    'timetable_reminders' => [
-        'minutes' => (int) env('TIMETABLE_REMINDER_MINUTES', 10),
     ],
 
 ];

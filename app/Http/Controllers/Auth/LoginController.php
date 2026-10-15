@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use App\Services\Parents\ParentAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -25,41 +25,38 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    /**
-     * The login box takes an email or a phone number. A phone number is
-     * matched to its account (parents sign in with their phone).
-     */
+    /** Sign in with e-mail, username or phone number. */
     protected function credentials(Request $request)
     {
         $login = trim((string) $request->input($this->username()));
-        if ($login !== '' && !str_contains($login, '@')) {
-            if ($user = ParentAccountService::findByPhone($login)) {
+
+        if ($login !== '' && ! str_contains($login, '@')) {
+            $user = User::where('username', $login)->orWhere('phone_number', $login)->first();
+            if ($user) {
                 $login = $user->email;
             }
         }
+
         return ['email' => $login, 'password' => $request->input('password')];
     }
 
     protected function authenticated(Request $request, $user)
     {
-        if (!empty($user->is_disabled)) {
+        if ($user->is_disabled) {
             $this->guard()->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            throw ValidationException::withMessages([$this->username() => 'This account has been disabled. Please contact the school.']);
+
+            throw ValidationException::withMessages([
+                $this->username() => 'This account has been disabled. Please contact your administrator.',
+            ]);
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'last_login_at')) {
-            $user->forceFill(['last_login_at' => now()])->saveQuietly();
-        }
+        // A fresh sign-in starts in the user's default fashion house.
+        $request->session()->forget('tenant_id');
 
-        if (!empty($user->must_change_password)) {
-            return redirect()->route('parent.password');
-        }
-
-        if ($user->hasRole(ParentAccountService::ROLE) && !$user->can('dashboard')) {
-            session()->forget('intended');
-            return redirect()->intended(route('parent.dashboard'));
+        if ($user->must_change_password) {
+            return redirect()->route('profile.settings', ['tab' => 'security']);
         }
 
         if ($intendedUrl = session('intended')) {
@@ -75,13 +72,9 @@ class LoginController extends Controller
 
     protected function isValidIntendedUrl($url, $request)
     {
-        $parsedUrl = parse_url($url);
+        $host = parse_url($url, PHP_URL_HOST);
 
-        if (!isset($parsedUrl['host'])) {
-            return true;
-        }
-
-        return $parsedUrl['host'] === $request->getHost();
+        return ! $host || $host === $request->getHost();
     }
 
     public function username()

@@ -2,17 +2,21 @@
 
 namespace App\Models;
 
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * A person who signs in. Users are global; the fashion houses they work in
+ * come from tenant_memberships, and their roles are per tenant (Spatie teams).
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
@@ -20,13 +24,13 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'username',
         'password',
-        'student_id',
         'phone_number',
         'gender',
-        'date_of_birth',
-        'profile_image',
         'avatar',
+        'is_disabled',
+        'must_change_password',
     ];
 
     protected $hidden = [
@@ -35,155 +39,101 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'date_of_birth' => 'date',
+        'email_verified_at'    => 'datetime',
+        'last_login_at'        => 'datetime',
+        'last_seen_at'         => 'datetime',
+        'is_platform_admin'    => 'boolean',
+        'is_disabled'          => 'boolean',
         'must_change_password' => 'boolean',
-        'is_disabled' => 'boolean',
-        'last_login_at' => 'datetime',
-        'credentials_sent_at' => 'datetime',
+        'password'             => 'hashed',
     ];
 
-    /** This user's staff record (staffbioinfo). */
-    public function staff(): HasOne
+    /* ------------------------------------------------------------------
+     | Tenancy
+     * ------------------------------------------------------------------ */
+
+    public function memberships(): HasMany
     {
-        return $this->hasOne(Staff::class, 'userid', 'id');
+        // Memberships across every tenant (not limited by the current tenant scope).
+        return $this->hasMany(TenantMembership::class)->withoutGlobalScope('tenant');
     }
 
-    /** Parent portal: children linked to this parent account. */
-    public function parentChildren(): BelongsToMany
+    public function tenants(): BelongsToMany
     {
-        return $this->belongsToMany(Student::class, 'parent_student', 'user_id', 'student_id')
-            ->withPivot('relationship', 'source')->withTimestamps();
+        return $this->belongsToMany(Tenant::class, 'tenant_memberships')
+            ->withPivot(['status', 'is_owner', 'branch_id', 'job_title'])
+            ->withTimestamps();
     }
 
-    // Staff picture relationship
-    public function staffPicture(): HasOne
+    /** Tenants this user can currently work in. */
+    public function activeTenants(): BelongsToMany
     {
-        return $this->hasOne(Staffpicture::class, 'staffId', 'id');
+        return $this->tenants()->wherePivot('status', 'active');
     }
 
-    // Staff employment details
-    public function staffemploymentDetails(): HasOne
+    public function membershipFor(Tenant|int|null $tenant = null): ?TenantMembership
     {
-        return $this->hasOne(Staff::class, 'userid', 'id');
+        $tenantId = $tenant instanceof Tenant ? $tenant->getKey() : ($tenant ?? CurrentTenant::id());
+
+        return $tenantId ? $this->memberships()->where('tenant_id', $tenantId)->first() : null;
     }
 
-    // Bio information
-    public function bio(): HasOne
+    public function isMemberOf(Tenant|int $tenant): bool
     {
-        return $this->hasOne(BioModel::class, 'user_id');
+        return (bool) $this->membershipFor($tenant)?->isActive();
     }
 
-    // Qualifications (for staff)
-    public function qualifications(): HasMany
+    /** Users that belong to the current tenant (any membership status). */
+    public function scopeInCurrentTenant(Builder $query): Builder
     {
-        return $this->hasMany(StaffQualification::class, 'user_id');
+        $tenantId = CurrentTenant::require()->getKey();
+
+        return $query->whereHas('memberships', fn ($q) => $q->where('tenant_id', $tenantId));
     }
 
-    // Student record (if user is a student)
-    public function student(): HasOne
+    public function isOwnerOfCurrentTenant(): bool
     {
-        return $this->hasOne(Student::class, 'id', 'student_id');
+        return (bool) $this->membershipFor()?->is_owner;
     }
 
-    // ADD THIS RELATIONSHIP - Subject teachings for teachers
-    public function subjectTeachings(): HasMany
-    {
-        return $this->hasMany(SubjectTeacher::class, 'staffid', 'id');
-    }
+    /* ------------------------------------------------------------------
+     | Presentation
+     * ------------------------------------------------------------------ */
 
-    // Alternative relationship if you need to get subjects directly
-    public function subjects()
-    {
-        return $this->belongsToMany(Subject::class, 'subjectteacher', 'staffid', 'subjectid')
-                    ->withPivot('termid', 'sessionid')
-                    ->withTimestamps();
-    }
-
-    // Check if user has Staff role
-    public function isStaff(): bool
-    {
-        return $this->hasRole('Staff');
-    }
-
-    // Check if user has Student role
-    public function isStudent(): bool
-    {
-        return $this->hasRole('Student') || !is_null($this->student_id);
-    }
-
-    // Get user's first name
     public function getFirstNameAttribute(): string
     {
-        $parts = explode(' ', trim($this->name));
-        return $parts[0] ?? '';
+        return explode(' ', trim($this->name))[0] ?? '';
     }
 
-    // Get user's last name
     public function getLastNameAttribute(): string
     {
         $parts = explode(' ', trim($this->name));
-        return isset($parts[1]) ? $parts[1] : '';
+
+        return count($parts) > 1 ? end($parts) : '';
     }
 
-    // Get avatar URL (safe fallback)
+    public function getInitialsAttribute(): string
+    {
+        return collect(preg_split('/\s+/', trim($this->name)))
+            ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+    }
+
     public function getAvatarUrlAttribute(): string
     {
-        // Staff picture
-        if ($this->isStaff() && $this->staffPicture?->picture) {
-            return asset('storage/staff_avatars/' . $this->staffPicture->picture);
+        if ($this->avatar && Storage::disk('public')->exists('avatars/' . basename($this->avatar))) {
+            return Storage::disk('public')->url('avatars/' . basename($this->avatar));
         }
 
-        // Student picture
-        if ($this->isStudent() && $this->student_id) {
-            $studentPicture = \App\Models\Studentpicture::where('studentid', $this->student_id)->first();
-            if ($studentPicture?->picture) {
-                return asset('storage/student_avatars/' . $studentPicture->picture);
-            }
-        }
-
-        // General avatar column
-        if ($this->avatar) {
-            return asset('storage/avatars/' . $this->avatar);
-        }
-
-        // Legacy profile_image
-        if ($this->profile_image) {
-            return asset('storage/' . $this->profile_image);
-        }
-
-        // Default fallback
-        $initials = strtoupper(substr($this->first_name, 0, 1) . substr($this->last_name, 0, 1));
-        return "https://ui-avatars.com/api/?name=" . urlencode($this->name) . "&color=7F9CF5&background=EBF4FF";
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
     }
 
-    // Get admission number (for students)
-    public function getAdmissionNoAttribute(): ?string
+    public function hasCustomAvatar(): bool
     {
-        return $this->isStudent() && $this->student?->admissionNo ? $this->student->admissionNo : null;
+        return $this->avatar && Storage::disk('public')->exists('avatars/' . basename($this->avatar));
     }
 
-    // Check if user is active
     public function isActive(): bool
     {
-        return true; // Customize if needed
-    }
-
-    // Get formatted date of birth
-    public function getFormattedDobAttribute(): ?string
-    {
-        return $this->date_of_birth?->format('d M Y');
-    }
-
-    // Scope for staff users
-    public function scopeStaff($query)
-    {
-        return $query->whereHas('roles', fn($q) => $q->where('name', 'Staff'));
-    }
-
-    // Scope for student users
-    public function scopeStudents($query)
-    {
-        return $query->whereHas('roles', fn($q) => $q->where('name', 'Student'));
+        return ! $this->is_disabled;
     }
 }

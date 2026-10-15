@@ -1,7 +1,7 @@
 {{-- resources/views/layouts/partials/notification-bell.blade.php — topbar bell --}}
 @php
     $pnUnread = 0;
-    try { $pnUnread = \Illuminate\Support\Facades\Schema::hasTable('notifications') ? auth()->user()->unreadNotifications()->count() : 0; } catch (\Throwable $e) {}
+    try { $pnUnread = \Illuminate\Support\Facades\Schema::hasTable('notifications') ? auth()->user()->unreadNotifications()->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', \App\Support\Tenancy\CurrentTenant::id()))->count() : 0; } catch (\Throwable $e) {}
 @endphp
 <div class="position-relative" id="pn-wrapper">
     <button type="button" id="pn-btn" class="btn btn-icon btn-topbar btn-ghost-dark rounded-circle position-relative" style="width:38px;height:38px;" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">

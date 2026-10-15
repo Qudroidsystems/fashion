@@ -2,57 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
-/** The bell: list, open (marks read) and mark all as read. */
+/**
+ * In-app notifications (database channel) for the topbar bell. Only the
+ * current fashion house's notifications (or platform-wide ones) are shown.
+ *
+ * Notification classes should put 'title', 'body', 'url' and 'icon' in
+ * toDatabase(); set tenant_id via App\Notifications\Concerns (future).
+ */
 class NotificationController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
-        abort_unless(Schema::hasTable('notifications'), 404);
-        $user = $request->user();
-        $q = $user->notifications();
-        if ($request->get('filter') === 'unread') $q = $user->unreadNotifications();
+        $items = $this->scoped($request)->latest()->paginate(25);
 
         return view('notifications.index', [
-            'pagetitle'     => 'Notifications',
-            'notifications' => $q->paginate(25)->withQueryString(),
-            'unread'        => $user->unreadNotifications()->count(),
+            'pagetitle' => 'Notifications',
+            'items'     => $items,
         ]);
     }
 
-    /** Latest items for the bell dropdown. */
-    public function feed(Request $request)
+    public function feed(Request $request): JsonResponse
     {
-        if (!Schema::hasTable('notifications')) return response()->json(['unread' => 0, 'items' => []]);
-        $user = $request->user();
+        $items = $this->scoped($request)->latest()->limit(15)->get()->map(fn ($n) => [
+            'id'    => $n->id,
+            'title' => $n->data['title'] ?? 'Notification',
+            'body'  => $n->data['body'] ?? '',
+            'url'   => $n->data['url'] ?? route('notifications.index'),
+            'icon'  => $n->data['icon'] ?? 'ri-notification-3-line',
+            'time'  => $n->created_at->diffForHumans(),
+            'read'  => (bool) $n->read_at,
+        ]);
 
         return response()->json([
-            'unread' => $user->unreadNotifications()->count(),
-            'items'  => $user->notifications()->limit(8)->get()->map(fn ($n) => [
-                'id'    => $n->id,
-                'title' => $n->data['title'] ?? 'Notification',
-                'body'  => mb_strimwidth($n->data['body'] ?? '', 0, 140, '…'),
-                'icon'  => $n->data['icon'] ?? 'ri-notification-3-line',
-                'read'  => (bool) $n->read_at,
-                'time'  => $n->created_at->diffForHumans(),
-                'url'   => route('notifications.open', $n->id),
-            ]),
+            'unread' => $this->scoped($request)->whereNull('read_at')->count(),
+            'items'  => $items,
         ]);
     }
 
-    public function open(Request $request, string $id)
+    public function readAll(Request $request): JsonResponse
     {
-        $n = $request->user()->notifications()->where('id', $id)->firstOrFail();
-        $n->markAsRead();
-        $url = $n->data['url'] ?? null;
-        return $url ? redirect()->to($url) : redirect()->route('notifications.index');
+        $this->scoped($request)->whereNull('read_at')->update(['read_at' => now()]);
+
+        return response()->json(['success' => true]);
     }
 
-    public function readAll(Request $request)
+    protected function scoped(Request $request)
     {
-        $request->user()->unreadNotifications->markAsRead();
-        return $request->expectsJson() ? response()->json(['ok' => true]) : back()->with('success', 'All notifications marked as read.');
+        $tenantId = CurrentTenant::id();
+
+        return $request->user()->notifications()
+            ->where(fn ($q) => $q->whereNull('tenant_id')->orWhere('tenant_id', $tenantId));
     }
 }

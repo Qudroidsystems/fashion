@@ -2,438 +2,292 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\BadgeModel;
+use App\Models\Role;
 use App\Models\User;
+use App\Services\Audit\AuditLogger;
+use App\Support\PermissionCatalog;
+use App\Support\Tenancy\CurrentTenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Symfony\Component\HttpFoundation\JsonResponse;
 
+/**
+ * Roles of the current fashion house. The Role model is tenant-scoped, so
+ * every query here only ever sees this house's roles.
+ */
 class RoleController extends Controller
 {
-    function __construct()
+    public function __construct()
     {
-        $this->middleware('permission:View role|Create role|Update role|Delete role|Add user-role|Update user-role|Remove user-role', ['only' => ['index', 'store']]);
-        $this->middleware('permission:Create role', ['only' => ['create', 'store']]);
-        $this->middleware('permission:Update role', ['only' => ['edit', 'update']]);
-        $this->middleware('permission:Delete role', ['only' => ['destroy', 'removeuserRole']]);
-        $this->middleware('permission:Update user-role', ['only' => ['adduser', 'updateuserrole']]);
+        $this->middleware('permission:View role|Create role|Update role|Delete role|Update user-role', ['only' => ['index', 'show', 'getRoleUsers']]);
+        $this->middleware('permission:Create role', ['only' => ['store']]);
+        $this->middleware('permission:Update role', ['only' => ['update']]);
+        $this->middleware('permission:Delete role', ['only' => ['destroy']]);
+        $this->middleware('permission:Update user-role', ['only' => ['adduser', 'updateuserrole', 'removeuserrole', 'bulkRemoveUsers']]);
     }
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        $pagetitle = "Role Management";
+        $roles = Role::ofCurrentTenant()->with('permissions:id,name')->orderByDesc('is_system')->orderBy('name')->get();
 
-        $roles = Role::orderBy('name', 'DESC')->get();
-        $role  = Role::orderBy('name', 'DESC')->get();
-
-        $permission = Permission::get();
-        $perm_title = Permission::get(['title']);
-        $array = [];
-        foreach ($perm_title as $title) {
-            $array[] = $title->title;
-        }
-
-        $ar = implode(',', $array);
-        $ex = explode(',', $ar);
-
-        return view('roles.index', compact('role'), compact('roles'), compact('permission'))
-            ->with('perm_title', $ex)
-            ->with('pagetitle', $pagetitle);
-    }
-
-    public function create(): View
-    {
-        $permission = Permission::get();
-        return view('roles.create', compact('permission'));
+        return view('roles.index', [
+            'pagetitle'      => 'Role Management',
+            'roles'          => $roles,
+            'roleUserCounts' => $this->userCounts($roles->pluck('id')->all()),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $pagetitle = "Role Management";
-
-        $this->validate($request, [
-            'name'           => 'required|unique:roles,name',
-            'permission'     => 'required|array',
-            'permission.*'   => 'exists:permissions,id',
-            'title'          => 'nullable|string',
-            'badge'          => 'nullable|string',
+        $data = $this->validate($request, [
+            'name'         => ['required', 'string', 'max:60', $this->uniqueName()],
+            'description'  => 'nullable|string|max:255',
+            'badge'        => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'permission'   => 'required|array',
+            'permission.*' => 'exists:permissions,id',
         ]);
 
         $role = Role::create([
-            'name'  => $request->input('name'),
-            'title' => $request->input('title'),
-            'badge' => $request->input('badge'),
+            'name'        => $data['name'],
+            'guard_name'  => 'web',
+            'description' => $data['description'] ?? null,
+            'badge'       => $data['badge'] ?? null,
         ]);
 
-        $permissionIds = $request->input('permission');
-        $permissions   = Permission::whereIn('id', $permissionIds)->pluck('name')->toArray();
+        $permissions = Permission::whereIn('id', $data['permission'])->pluck('name')->all();
         $role->syncPermissions($permissions);
 
-        return redirect()->route('roles.index')
-            ->with('success', 'Role created successfully')
-            ->with('pagetitle', $pagetitle);
+        AuditLogger::log('role.created', $role, after: ['name' => $role->name, 'permissions' => $permissions]);
+
+        return redirect()->route('roles.index')->with('success', 'Role created successfully');
     }
 
-    public function show($id)
+    public function show(Role $role): View
     {
-        $pagetitle = "Role Management";
-
-        $userRoleCount = DB::table('model_has_roles')->where('role_id', $id)->count();
-
-        $usersWithRole = User::leftJoin("roles", "roles.id", "=", "users.id")
-            ->join("model_has_roles", "model_has_roles.model_id", "=", "users.id")
-            ->where("model_has_roles.role_id", $id)
-            ->select([
-                'users.id as id',
-                'users.name as username',
-                'users.email as email',
-                'users.created_at as created_at',
-                'model_has_roles.role_id as roleid'
-            ])
+        $usersWithRole = $this->roleUsersQuery($role)
+            ->select(['users.id', 'users.name as username', 'users.email', 'users.created_at'])
+            ->orderBy('users.name')
             ->paginate(500);
 
-        $role = Role::find($id);
-        $rolePermissions = Permission::join("role_has_permissions", "role_has_permissions.permission_id", "=", "permissions.id")
-            ->where("role_has_permissions.role_id", $id)
-            ->get();
-        $rolePermissions2 = DB::table("role_has_permissions")
-            ->where("role_has_permissions.role_id", $id)
-            ->pluck('role_has_permissions.permission_id', 'role_has_permissions.permission_id')
-            ->all();
-
-        $permission = Permission::get();
-        $perm_title = Permission::get(['title']);
-        $array = [];
-        foreach ($perm_title as $title) {
-            $array[] = $title->title;
-        }
-
-        $ar = implode(',', $array);
-        $ex = explode(',', $ar);
+        $candidates = User::inCurrentTenant()
+            ->whereNotIn('users.id', $usersWithRole->pluck('id'))
+            ->orderBy('name')->get(['id', 'name', 'email']);
 
         Session::put('role_url', request()->fullUrl());
 
-        return view('roles.show', compact(
-            'role',
-            'rolePermissions',
-            'rolePermissions2',
-            'usersWithRole',
-            'userRoleCount',
-            'pagetitle'
-        ))->with('perm_title', $ex);
+        return view('roles.show', [
+            'pagetitle'       => 'Role Management',
+            'role'            => $role,
+            'rolePermissions' => $role->permissions()->orderBy('name')->get(),
+            'usersWithRole'   => $usersWithRole,
+            'userRoleCount'   => $usersWithRole->total(),
+            'candidates'      => $candidates,
+        ]);
     }
 
-    public function edit($id): View
+    public function update(Request $request, Role $role): RedirectResponse
     {
-        $pagetitle = "Role Management";
+        abort_if($role->isOwnerRole(), 403, 'The Owner role always has every permission.');
 
-        $role = Role::find($id);
-        $rolePermissions = DB::table("role_has_permissions")
-            ->where("role_has_permissions.role_id", $id)
-            ->pluck('role_has_permissions.permission_id', 'role_has_permissions.permission_id')
-            ->all();
-        $permission = Permission::get();
-        $perm_title = Permission::get(['title']);
-        $array = [];
-        foreach ($perm_title as $title) {
-            $array[] = $title->title;
-        }
-
-        $ar = implode(',', $array);
-        $ex = explode(',', $ar);
-
-        return view('roles.edit', compact('role', 'permission', 'rolePermissions'))
-            ->with('perm_title', $ex)
-            ->with('pagetitle', $pagetitle);
-    }
-
-    public function update(Request $request, $id): RedirectResponse
-    {
-        $pagetitle = "Role Management";
-
-        $this->validate($request, [
-            'name'         => 'required|unique:roles,name,' . $id,
+        $data = $this->validate($request, [
+            'name'         => ['required', 'string', 'max:60', $this->uniqueName($role->id)],
+            'description'  => 'nullable|string|max:255',
+            'badge'        => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'permission'   => 'required|array',
             'permission.*' => 'exists:permissions,id',
-            'badge'        => 'nullable|string',
         ]);
 
-        $role = Role::findOrFail($id);
+        $before = ['name' => $role->name, 'permissions' => $role->permissions->pluck('name')->sort()->values()->all()];
+
         $role->update([
-            'name'  => $request->input('name'),
-            'badge' => $request->input('badge'),
+            'name'        => $role->is_system ? $role->name : $data['name'],   // default roles keep their name
+            'description' => $data['description'] ?? null,
+            'badge'       => $data['badge'] ?? $role->badge,
         ]);
 
-        $permissionIds = $request->input('permission');
-        $permissions   = Permission::whereIn('id', $permissionIds)->pluck('name')->toArray();
+        $permissions = Permission::whereIn('id', $data['permission'])->pluck('name')->sort()->values()->all();
         $role->syncPermissions($permissions);
 
-        if (session('role_url')) {
-            return redirect(session('role_url'))
-                ->with('success', 'Role Updated successfully')
-                ->with('pagetitle', $pagetitle);
+        [$b, $a] = AuditLogger::diff($before, ['name' => $role->name, 'permissions' => $permissions]);
+        if ($a) {
+            AuditLogger::log('role.permissions_changed', $role, $b, $a);
         }
 
-        return redirect()->route('roles.index')
-            ->with('success', 'Role Updated successfully')
-            ->with('pagetitle', $pagetitle);
+        if ($url = session('role_url')) {
+            return redirect($url)->with('success', 'Role updated successfully');
+        }
+
+        return redirect()->route('roles.index')->with('success', 'Role updated successfully');
     }
 
-    public function adduser($id): View
+    public function adduser(Role $role): View
     {
-        $pagetitle = "Role Management";
+        $users = User::inCurrentTenant()
+            ->whereNotIn('users.id', $this->roleUsersQuery($role)->pluck('users.id'))
+            ->orderBy('name')->get();
 
-        $role = Role::find($id);
-        $r    = $role->name;
-        $users = User::whereDoesntHave('roles', function ($q) use ($r) {
-            $q->where('name', $r);
-        })->get();
-
-        return view('roles.adduser')
-            ->with('role', $role)
-            ->with('users', $users)
-            ->with('pagetitle', $pagetitle);
+        return view('roles.adduser', [
+            'pagetitle' => 'Role Management',
+            'role'      => $role,
+            'users'     => $users,
+        ]);
     }
 
-    /**
-     * Assign role(s) to users.
-     * When the student role is assigned, auto-populate users.student_id
-     * from studentRegistration (matched by email, then by name).
-     */
+    /** Assign a role to several staff members of this house. */
     public function updateuserrole(Request $request): RedirectResponse
     {
-        $pagetitle = "Role Management";
+        $tenantId = CurrentTenant::id();
 
-        $this->validate($request, [
-            'users'    => 'required|array',
-            'users.*'  => 'exists:users,id',
-            'roleid'   => 'required|exists:roles,id',
+        $data = $this->validate($request, [
+            'users'   => 'required|array',
+            'users.*' => 'integer',
+            'roleid'  => ['required', Rule::exists('roles', 'id')->where('tenant_id', $tenantId)],
         ]);
 
-        $role    = Role::findOrFail($request->input('roleid'));
-        $userIds = $request->input('users');
+        $role = Role::ofCurrentTenant()->findOrFail($data['roleid']);
 
-        $isStudentRole = strtolower($role->name) === 'student';
+        if ($role->isOwnerRole() && ! $request->user()->hasRole(PermissionCatalog::OWNER_ROLE)) {
+            return back()->with('error', 'Only an Owner can give someone the Owner role.');
+        }
 
-        foreach ($userIds as $userId) {
-            $user = User::findOrFail($userId);
-            $user->assignRole($role->name);
+        // Only people who belong to this house can be given its roles.
+        $users = User::inCurrentTenant()->whereIn('users.id', $data['users'])->get();
 
-            // When assigning the student role, link the user to studentRegistration
-            if ($isStudentRole && is_null($user->student_id)) {
-                $this->linkUserToStudentRecord($user);
-            }
+        foreach ($users as $user) {
+            $user->assignRole($role);
+            AuditLogger::log('user.roles_changed', $user, after: ['added_role' => $role->name]);
         }
 
         return redirect()->route('roles.show', $role->id)
-            ->with('success', 'Users added to role successfully')
-            ->with('pagetitle', $pagetitle);
+            ->with('success', $users->count() . ' user(s) added to ' . $role->name);
     }
 
-    /**
-     * Try to find the matching studentRegistration row for a user and
-     * write its id into users.student_id.
-     *
-     * Matching priority:
-     *   1. Email match (most reliable)
-     *   2. Full name match  (CONCAT firstname + ' ' + lastname)
-     */
-    private function linkUserToStudentRecord(User $user): void
-    {
-        try {
-            $studentReg = null;
-
-            // 1 — try email match first
-            if (!empty($user->email)) {
-                $studentReg = DB::table('studentRegistration')
-                    ->where('email', $user->email)
-                    ->select('id')
-                    ->first();
-            }
-
-            // 2 — fall back to full-name match
-            if (!$studentReg && !empty($user->name)) {
-                $studentReg = DB::table('studentRegistration')
-                    ->whereRaw("TRIM(CONCAT(firstname, ' ', lastname)) = ?", [trim($user->name)])
-                    ->select('id')
-                    ->first();
-            }
-
-            if ($studentReg) {
-                $user->update(['student_id' => $studentReg->id]);
-
-                Log::info('Linked user to studentRegistration', [
-                    'user_id'        => $user->id,
-                    'user_name'      => $user->name,
-                    'student_reg_id' => $studentReg->id,
-                ]);
-            } else {
-                Log::warning('Could not find matching studentRegistration for user', [
-                    'user_id'   => $user->id,
-                    'user_name' => $user->name,
-                    'email'     => $user->email,
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Non-fatal — role was still assigned, just log the failure
-            Log::error('Error linking user to studentRegistration', [
-                'user_id' => $user->id,
-                'error'   => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * Remove user from role.
-     */
     public function removeuserrole(Request $request, $userid, $roleid): JsonResponse
     {
-        Log::info("Removing user role", ['user_id' => $userid, 'role_id' => $roleid]);
+        $role = Role::ofCurrentTenant()->findOrFail($roleid);
+        $user = User::inCurrentTenant()->findOrFail($userid);
 
-        try {
-            $user = User::findOrFail($userid);
-            $role = Role::findOrFail($roleid);
-            $user->removeRole($role->name);
-
-            return response()->json(['success' => true, 'message' => 'User role removed successfully']);
-        } catch (\Exception $e) {
-            Log::error("Error removing user role", [
-                'error'   => $e->getMessage(),
-                'user_id' => $userid,
-                'role_id' => $roleid,
-                'trace'   => $e->getTraceAsString()
-            ]);
-            return response()->json(['message' => 'Error removing user role: ' . $e->getMessage()], 500);
+        if ($error = $this->ownerRemovalError($role, collect([$user]))) {
+            return response()->json(['success' => false, 'message' => $error], 422);
         }
+
+        $user->removeRole($role);
+        AuditLogger::log('user.roles_changed', $user, before: ['removed_role' => $role->name]);
+
+        return response()->json(['success' => true, 'message' => 'User removed from ' . $role->name]);
     }
 
-    public function delete($id)
+    public function bulkRemoveUsers(Request $request): JsonResponse
     {
-        $delete = User::destroy($id);
+        $data = $request->validate([
+            'role_id'          => ['required', Rule::exists('roles', 'id')->where('tenant_id', CurrentTenant::id())],
+            'selected_users'   => 'required|array',
+            'selected_users.*' => 'integer',
+        ]);
 
-        if ($delete == 1) {
-            $success = true;
-            $message = "User deleted successfully";
-        } else {
-            $success = true;
-            $message = "User not found";
+        $role = Role::ofCurrentTenant()->findOrFail($data['role_id']);
+        $users = User::inCurrentTenant()->whereIn('users.id', $data['selected_users'])->get()
+            ->filter(fn ($u) => $u->hasRole($role));
+
+        if ($error = $this->ownerRemovalError($role, $users)) {
+            return response()->json(['success' => false, 'message' => $error], 422);
+        }
+
+        foreach ($users as $user) {
+            $user->removeRole($role);
+            AuditLogger::log('user.roles_changed', $user, before: ['removed_role' => $role->name]);
+        }
+
+        if ($users->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No users were removed. They may not have had this role.']);
         }
 
         return response()->json([
-            'success' => $success,
-            'message' => $message,
+            'success'       => true,
+            'message'       => "Removed {$users->count()} user(s) from the {$role->name} role.",
+            'removed_count' => $users->count(),
+            'removed_users' => $users->pluck('name')->values(),
         ]);
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy(Role $role): RedirectResponse
     {
-        $pagetitle = "Role Management";
-
-        DB::table("roles")->where('id', $id)->delete();
-
-        return redirect()->route('roles.index')
-            ->with('success', 'Role deleted successfully')
-            ->with('pagetitle', $pagetitle);
-    }
-
-    public function bulkRemoveUsers(Request $request)
-    {
-        try {
-            $request->validate([
-                'role_id'          => 'required|exists:roles,id',
-                'selected_users'   => 'required|array',
-                'selected_users.*' => 'exists:users,id',
-            ]);
-
-            $role  = Role::findOrFail($request->role_id);
-            $users = User::whereIn('id', $request->selected_users)->get();
-
-            $removedCount = 0;
-            $removedNames = [];
-
-            foreach ($users as $user) {
-                if ($user->hasRole($role->name)) {
-                    $user->removeRole($role);
-                    $removedCount++;
-                    $removedNames[] = $user->name;
-                }
-            }
-
-            if ($removedCount > 0) {
-                return response()->json([
-                    'success'       => true,
-                    'message'       => "Successfully removed {$removedCount} user(s) from the {$role->name} role.",
-                    'removed_count' => $removedCount,
-                    'removed_users' => $removedNames,
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'No users were removed. They may not have had this role.',
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Bulk remove users error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to remove users: ' . $e->getMessage(),
-            ], 500);
+        if ($role->is_system) {
+            return redirect()->route('roles.index')->with('error', 'Default roles cannot be deleted. Remove their permissions instead.');
         }
+
+        AuditLogger::log('role.deleted', $role, before: ['name' => $role->name, 'permissions' => $role->permissions->pluck('name')->all()]);
+        $role->delete();
+
+        return redirect()->route('roles.index')->with('success', 'Role deleted successfully');
     }
 
     public function getRoleUsers(Role $role, Request $request)
     {
-        try {
-            $perPage = $request->get('per_page', 10);
-            $page    = $request->get('page', 1);
+        $usersWithRole = $this->roleUsersQuery($role)->select('users.*')->orderBy('users.name')
+            ->paginate((int) $request->get('per_page', 10));
 
-            $usersWithRole = $role->users()
-                ->with(['student.currentClass.class', 'staffemploymentDetails'])
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $page);
-
-            $userRoleCount = $role->users()->count();
-
-            if ($request->ajax()) {
-                $html = view('roles.partials.users_table_rows', [
-                    'users' => $usersWithRole,
-                    'role'  => $role,
-                ])->render();
-
-                $pagination = view('roles.partials.pagination', [
-                    'users' => $usersWithRole,
-                ])->render();
-
-                return response()->json([
-                    'success'      => true,
-                    'html'         => $html,
-                    'pagination'   => $pagination,
-                    'total'        => $userRoleCount,
-                    'current_page' => $usersWithRole->currentPage(),
-                    'last_page'    => $usersWithRole->lastPage(),
-                    'per_page'     => $usersWithRole->perPage(),
-                ]);
-            }
-
-            return view('roles.show', compact('role', 'usersWithRole', 'userRoleCount'));
-
-        } catch (\Exception $e) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to load users: ' . $e->getMessage(),
-                ], 500);
-            }
-
-            return back()->with('error', 'Failed to load users: ' . $e->getMessage());
+        if ($request->ajax()) {
+            return response()->json([
+                'success'      => true,
+                'html'         => view('roles.partials.users_table_rows', ['users' => $usersWithRole, 'role' => $role])->render(),
+                'pagination'   => view('roles.partials.pagination', ['users' => $usersWithRole])->render(),
+                'total'        => $usersWithRole->total(),
+                'current_page' => $usersWithRole->currentPage(),
+                'last_page'    => $usersWithRole->lastPage(),
+                'per_page'     => $usersWithRole->perPage(),
+            ]);
         }
+
+        return redirect()->route('roles.show', $role);
+    }
+
+    /* ------------------------------------------------------------------ */
+
+    /** Users holding this role in the current tenant. */
+    protected function roleUsersQuery(Role $role)
+    {
+        return User::query()
+            ->join('model_has_roles as mhr', function ($join) use ($role) {
+                $join->on('mhr.model_id', '=', 'users.id')
+                    ->where('mhr.model_type', (new User)->getMorphClass())
+                    ->where('mhr.role_id', $role->id)
+                    ->where('mhr.tenant_id', CurrentTenant::id());
+            });
+    }
+
+    protected function userCounts(array $roleIds): array
+    {
+        return DB::table('model_has_roles')
+            ->whereIn('role_id', $roleIds)
+            ->where('tenant_id', CurrentTenant::id())
+            ->selectRaw('role_id, count(*) as c')->groupBy('role_id')
+            ->pluck('c', 'role_id')->all();
+    }
+
+    protected function uniqueName(?int $ignoreId = null)
+    {
+        return Rule::unique('roles', 'name')
+            ->where('tenant_id', CurrentTenant::id())
+            ->where('guard_name', 'web')
+            ->ignore($ignoreId);
+    }
+
+    protected function ownerRemovalError(Role $role, $users): ?string
+    {
+        if (! $role->isOwnerRole()) {
+            return null;
+        }
+        if ($users->contains('id', auth()->id())) {
+            return 'You cannot remove the Owner role from yourself.';
+        }
+        $owners = $this->roleUsersQuery($role)->count();
+
+        return $owners - $users->count() < 1 ? 'A fashion house must keep at least one Owner.' : null;
     }
 }

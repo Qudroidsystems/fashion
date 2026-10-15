@@ -3,10 +3,10 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Sign Up | Vite-ESchool</title>
+    <title>Sign Up | {{ $brand['name'] }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="school App" name="description">
-    <meta content="Themesbrand" name="author">
+    <meta content="Fashion house management platform" name="description">
+    <meta content="Qudroid Systems" name="author">
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('theme/layouts/assets/images/favicon.ico')}}">
 
@@ -401,15 +401,15 @@
                                 <div class="card auth-card bg-secondary h-100 border-0 shadow-none d-none d-sm-block mb-0">
                                     <div class="card-body py-5 d-flex justify-content-between flex-column">
                                         <div class="text-center">
-                                            <h3 class="text-white" style="animation: fadeInScale 0.6s ease;">Join our community</h3>
-                                            <p class="text-white opacity-75 fs-base">Create your account and get started</p>
+                                            <h3 class="text-white" style="animation: fadeInScale 0.6s ease;">Run your fashion house in one place</h3>
+                                            <p class="text-white opacity-75 fs-base">Customers, measurements, orders, production and stock.</p>
                                         </div>
 
                                         <div class="auth-effect-main my-5 position-relative rounded-circle d-flex align-items-center justify-content-center mx-auto">
                                             <div class="effect-circle-1 position-relative mx-auto rounded-circle d-flex align-items-center justify-content-center" style="animation: pulse 2s infinite;">
                                                 <div class="effect-circle-2 position-relative mx-auto rounded-circle d-flex align-items-center justify-content-center">
                                                     <div class="effect-circle-3 mx-auto rounded-circle position-relative text-white fs-4xl d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(4px);">
-                                                        Welcome to <span class="text-primary ms-1">Vite-ESchool</span>
+                                                        Welcome to <span class="text-primary ms-1">{{ $brand['platform'] }}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -454,7 +454,7 @@
 
                                         <div class="text-center">
                                             <p class="text-white opacity-75 mb-0 mt-3">
-                                                &copy; <script>document.write(new Date().getFullYear())</script> Vite-ESchool. Created with <i class="mdi mdi-heart text-danger"></i> by Qudroid Systems
+                                                &copy; <script>document.write(new Date().getFullYear())</script> {{ $brand['platform'] }}. Created with <i class="mdi mdi-heart text-danger"></i> by Qudroid Systems
                                             </p>
                                         </div>
                                     </div>
@@ -465,12 +465,20 @@
                                 <div class="card mb-0 border-0 shadow-none mb-0" style="background: transparent;">
                                     <div class="card-body p-sm-5 m-lg-4">
                                         <div class="text-center mt-2">
-                                            <h5 class="fs-2xl fw-semibold" style="animation: fadeInScale 0.5s ease;">Create your free account</h5>
-                                            <p class="text-muted">Get started with your learning journey</p>
+                                            <h5 class="fs-2xl fw-semibold" style="animation: fadeInScale 0.5s ease;">Create your fashion house account</h5>
+                                            <p class="text-muted">Start a {{ config('tenancy.trial_days') }}-day free trial. You will be the Owner.</p>
                                         </div>
                                         <div class="p-2 mt-4">
                                             <form method="POST" action="{{ route('register') }}" id="registerForm">
                                                 @csrf
+
+                                                <div class="mb-4">
+                                                    <label for="business_name" class="form-label">Fashion house name <span class="text-danger">*</span></label>
+                                                    <input id="business_name" type="text" class="form-control apple-input @error('business_name') is-invalid @enderror" name="business_name" value="{{ old('business_name') }}" required autofocus placeholder="e.g. Adire Couture">
+                                                    @error('business_name')
+                                                        <span class="invalid-feedback" role="alert"><strong>{{ $message }}</strong></span>
+                                                    @enderror
+                                                </div>
 
                                                 <div class="mb-4">
                                                     <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
@@ -484,12 +492,17 @@
 
                                                 <div class="mb-4">
                                                     <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                                                    <input id="name" type="text" class="form-control apple-input @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus placeholder="John Doe">
+                                                    <input id="name" type="text" class="form-control apple-input @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" placeholder="Your full name">
                                                     @error('name')
                                                         <span class="invalid-feedback" role="alert">
                                                             <strong>{{ $message }}</strong>
                                                         </span>
                                                     @enderror
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label for="phone_number" class="form-label">Phone</label>
+                                                    <input id="phone_number" type="text" class="form-control apple-input @error('phone_number') is-invalid @enderror" name="phone_number" value="{{ old('phone_number') }}" autocomplete="tel" placeholder="+234…">
                                                 </div>
 
                                                 <div class="mb-4">
@@ -512,6 +525,11 @@
                                                             <strong>{{ $message }}</strong>
                                                         </span>
                                                     @enderror
+                                                </div>
+
+                                                <div class="mb-4">
+                                                    <label class="form-label" for="password-confirm">Confirm password <span class="text-danger">*</span></label>
+                                                    <input type="password" class="form-control apple-input" id="password-confirm" name="password_confirmation" autocomplete="new-password" required placeholder="Repeat your password">
                                                 </div>
 
                                                 <div id="password-contain" class="p-3 bg-light mb-4 rounded-3 password-strength-container" style="border-radius: 12px;">

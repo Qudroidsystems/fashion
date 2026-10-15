@@ -240,11 +240,13 @@ body{font-family:var(--rol-font);}
     {{-- Hero --}}
     <div class="rol-hero">
         <h1><i class="bi bi-shield-lock-fill me-2"></i>Role Management</h1>
-        <p>Define roles, assign permissions, and control what users can access across the system.</p>
+        <p>Define roles, assign permissions, and control what your staff can access in {{ $brand['name'] }}.</p>
         <div class="rol-hero-actions">
+            @can('Create role')
             <button type="button" class="rol-btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModalgrid">
                 <i class="bi bi-plus-circle"></i> Create Role
             </button>
+            @endcan
         </div>
     </div>
 
@@ -266,9 +268,13 @@ body{font-family:var(--rol-font);}
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xxl-4 g-3">
         @foreach ($roles as $role)
         @php
-            $roles_num = DB::table('model_has_roles')->where('role_id',$role->id)->count();
+            $roles_num = $roleUserCounts[$role->id] ?? 0;
             $role_permissions = $role->permissions->pluck('name')->take(4);
-            $icons = ['Admin'=>'bi-shield-check','Student'=>'bi-mortarboard','Staff'=>'bi-person-badge','Teacher'=>'bi-book'];
+            $icons = [
+                'Owner' => 'bi-gem', 'Manager' => 'bi-briefcase', 'Designer' => 'bi-palette',
+                'Tailor' => 'bi-scissors', 'Storekeeper' => 'bi-box-seam', 'Cashier' => 'bi-cash-coin',
+                'Accountant' => 'bi-calculator', 'Customer' => 'bi-person-heart',
+            ];
             $icon  = $icons[$role->name] ?? 'bi-key';
         @endphp
         <div class="col">
@@ -277,7 +283,7 @@ body{font-family:var(--rol-font);}
                 <div class="rol-card-top">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="rol-card-icon"><i class="bi {{ $icon }}"></i></div>
-                        @canany(['Update user-role','Remove user-role'])
+                        @canany(['Update user-role','Delete role'])
                         <div class="dropdown rol-dropdown">
                             <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-three-dots-vertical"></i>
@@ -297,7 +303,8 @@ body{font-family:var(--rol-font);}
                                     </a>
                                 </li>
                                 @endcan
-                                @can('Remove user-role')
+                                @if(! $role->is_system)
+                                @can('Delete role')
                                 <li><hr class="dropdown-divider my-1"></li>
                                 <li>
                                     <form method="POST" action="{{ route('roles.destroy', $role->id) }}"
@@ -309,11 +316,16 @@ body{font-family:var(--rol-font);}
                                     </form>
                                 </li>
                                 @endcan
+                                @endif
                             </ul>
                         </div>
                         @endcanany
                     </div>
-                    <div class="rol-card-name mt-1">{{ $role->name }}</div>
+                    <div class="rol-card-name mt-1">
+                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ $role->badge ?: '#94a3b8' }};margin-right:6px;"></span>{{ $role->name }}
+                        @if($role->is_system)<span class="badge bg-light text-muted border ms-1" style="font-size:10px;" title="Default role">default</span>@endif
+                    </div>
+                    @if($role->description)<div class="small text-muted mt-1">{{ $role->description }}</div>@endif
                     <div class="rol-card-count">
                         <strong>{{ $roles_num }}</strong> assigned user{{ $roles_num !== 1 ? 's' : '' }}
                     </div>
@@ -375,21 +387,15 @@ body{font-family:var(--rol-font);}
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="rol-form-label">Role Name <span class="text-danger">*</span></label>
-                                <input type="text" class="rol-form-control" name="name" placeholder="e.g. Administrator" required>
+                                <input type="text" class="rol-form-control" name="name" placeholder="e.g. Head of Production" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="rol-form-label">Description</label>
+                                <input type="text" class="rol-form-control" name="description" maxlength="255" placeholder="What this role is for">
                             </div>
                             <div class="col-md-6">
                                 <label class="rol-form-label">Role Badge Colour</label>
-                                <select name="badge" class="rol-form-control">
-                                    <option value="">Select colour…</option>
-                                    <option value="badge bg-light">Light Grey</option>
-                                    <option value="badge bg-dark">Dark</option>
-                                    <option value="badge bg-primary">Blue</option>
-                                    <option value="badge bg-secondary">Light Blue</option>
-                                    <option value="badge bg-success">Green</option>
-                                    <option value="badge bg-info">Purple</option>
-                                    <option value="badge bg-warning">Yellow</option>
-                                    <option value="badge bg-danger">Red</option>
-                                </select>
+                                <input type="color" name="badge" class="rol-form-control form-control-color w-100" value="#405189" title="Colour used for this role's chips">
                             </div>
                         </div>
 
