@@ -98,4 +98,5 @@ Route::middleware('auth')->group(function () {
     // ── Business modules (SRS roadmap), one route file each ─────────────
     require __DIR__ . '/modules/customers.php';
     require __DIR__ . '/modules/measurements.php';
+    require __DIR__ . '/modules/catalogue.php';
 });
