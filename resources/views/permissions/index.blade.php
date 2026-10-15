@@ -85,9 +85,8 @@ use Spatie\Permission\Models\Role;
                                         <tbody class="list form-check-all">
                                             @forelse ($data as $permission)
                                                     @php
-                                                        $rolePermissions = DB::table("role_has_permissions")->where("role_has_permissions.permission_id",$permission->id)
-                                                        ->leftJoin('roles', 'roles.id','=','role_has_permissions.role_id')
-                                                        ->get(['roles.name as name','roles.badge as badge']);
+                                                        // Only this fashion house's roles (roles are per tenant).
+                                                        $rolePermissions = $rolesByPermission[$permission->id] ?? collect();
                                                     @endphp
 
                                          
@@ -102,8 +101,8 @@ use Spatie\Permission\Models\Role;
                                                     <td class="name" data-name="{{ $permission->name }}">
                                                         <div class="d-flex align-items-center">
                                                             <div>
-                                                                <h6 class="mb-0"><a href="" class="text-reset products">{{ $permission->name }}</a></h6>
-                                                                <p>{{ $permission->title }}</p>
+                                                                <h6 class="mb-0">{{ $permission->name }}</h6>
+                                                                <p class="mb-0 small text-muted">{{ $permission->title }} · {{ \App\Support\PermissionMeta::for($permission->name)['desc'] }}</p>
                                                             </div>
                                                             
                                                         </div>
@@ -111,7 +110,7 @@ use Spatie\Permission\Models\Role;
                                                     <td class="role" data-roles="">
                                                         <div>
                                                             @foreach ($rolePermissions as $r)
-                                                                  <a href="{{ route('roles.index',) }}" class="{{ $r->badge }} fs-7 m-1">{{ $r->name }}</a>
+                                                                  <a href="{{ route('roles.show', $r->id) }}" class="badge fs-7 m-1 text-white" style="background:{{ $r->badge ?: '#64748b' }}">{{ $r->name }}</a>
                                                             @endforeach
                                                         </div>
                                                     </td>

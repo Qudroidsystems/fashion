@@ -1,66 +1,48 @@
 <?php
 
-use App\Http\Controllers\Api\DeviceAttendanceController;
-use App\Http\Controllers\Api\TimetableApiController;
-use App\Http\Controllers\TimetableController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API v1 — staff app, customer app and future web clients (SRS §8)
 |--------------------------------------------------------------------------
-| Laravel automatically prefixes every route here with /api.
-| All routes below therefore live under /api/timetable/... etc.
+| Base URL: /api/v1   ·   Auth: Bearer token (Sanctum)
+| Tenant:   optional X-Tenant header (slug or public id), honoured only for
+|           an active membership. Errors use the envelope in bootstrap/app.php.
 */
 
-// =========================================================================
-// Mobile app API v1 (Sanctum tokens) — see routes/api_v1.php
-// =========================================================================
-Route::prefix('v1')->name('api.v1.')->group(base_path('routes/api_v1.php'));
+Route::prefix('v1')->name('api.v1.')->group(function () {
 
-// =========================================================================
-// Teacher / Student / Parent-facing timetable endpoints (mobile app)
-// =========================================================================
-Route::middleware('auth:sanctum')->prefix('timetable')->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1')->name('auth.login');
 
-    // Teacher
-    Route::get('my-timetable', [TimetableApiController::class, 'getMyTimetable']);
-    Route::get('today-schedule', [TimetableApiController::class, 'getTodaySchedule']);
-    Route::get('upcoming-classes', [TimetableApiController::class, 'getUpcomingClasses']);
-    Route::post('mark-attendance', [TimetableApiController::class, 'markAttendance']);
+    Route::middleware(['auth:sanctum', 'api.active'])->group(function () {
+        // Account-level endpoints work without a tenant (e.g. a user choosing a house).
+        Route::middleware('api.tenant:optional')->group(function () {
+            Route::get('/me', [AuthController::class, 'me'])->name('auth.me');
+            Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+            Route::post('/auth/password', [AuthController::class, 'password'])->name('auth.password');
+            Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
+        });
 
-    // Student / Parent
-    Route::get('class-timetable/{classId}', [TimetableApiController::class, 'getClassTimetable']);
-    Route::get('child-timetable/{studentId}', [TimetableApiController::class, 'getChildTimetable']);
+        // Everything below runs inside a fashion house.
+        Route::middleware('api.tenant')->group(function () {
+            Route::get('/tenants/current', [TenantController::class, 'current'])->name('tenants.current');
 
-    // Substitute requests
-    Route::post('request-substitute', [TimetableApiController::class, 'requestSubstitute']);
-    Route::get('substitute-requests', [TimetableApiController::class, 'getSubstituteRequests']);
+            // Customers (SRS §8.2)
+            Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+            Route::post('/customers', [CustomerController::class, 'store'])->middleware('idempotent')->name('customers.store');
+            Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+            Route::patch('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+            Route::get('/customers/{customer}/timeline', [CustomerController::class, 'timeline'])->name('customers.timeline');
+            Route::post('/customers/{customer}/follow-ups', [CustomerController::class, 'storeFollowUp'])->middleware('idempotent')->name('customers.follow-ups.store');
 
-    // Notifications
-    Route::get('notifications', [TimetableApiController::class, 'getNotifications']);
-    Route::post('notifications/mark-read', [TimetableApiController::class, 'markNotificationsRead']);
-
-    // Web-UI helper: teachers view uses this URL from its blade JS.
-    // Lives here so it resolves as /api/timetable/available-substitutes
-    // (one /api prefix from Laravel, one timetable from the group above),
-    // and reuses the same controller method the web route points to.
-    Route::get('available-substitutes', [TimetableController::class, 'getAvailableSubstitutes'])
-        ->name('api.timetable.available-substitutes');
-});
-
-// =========================================================================
-// Device -> server attendance ingestion (protected by X-Device-Key)
-// =========================================================================
-Route::middleware('device.auth')->post('/device/attendance', [DeviceAttendanceController::class, 'store']);
-
-// =========================================================================
-// Module feature flags — the remote control portal reads/sets 1/0 here.
-// Protected by the shared key (bearer) + HMAC signature on writes.
-// =========================================================================
-Route::middleware('remote.portal')->prefix('feature-flags')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Api\FeatureFlagApiController::class, 'index']);
-    Route::get('/health', [\App\Http\Controllers\Api\FeatureFlagApiController::class, 'health']);
-    Route::get('/catalog', [\App\Http\Controllers\Api\FeatureFlagApiController::class, 'catalog']);
-    Route::post('/sync', [\App\Http\Controllers\Api\FeatureFlagApiController::class, 'sync']);
+            /*
+            | Further module endpoints (measurement-sessions, orders, …) go here.
+            */
+        });
+    });
 });

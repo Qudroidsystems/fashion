@@ -1,61 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Fashion House Management Platform (FHMP)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 12 · Blade (Velzon theme) · MySQL · Spatie Permission (teams) · Sanctum API
 
-## About Laravel
+This is the **platform foundation** (SRS roadmap phase 1): multi-tenant SaaS core,
+users, roles and permissions, branches, settings, audit trail, and the `/api/v1`
+base for the Flutter staff and customer apps. Business modules (CRM, measurements,
+inventory, orders, POS, production, projects) are built on top of it.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Setup (XAMPP)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+composer update laravel/sanctum     # sanctum was in composer.json but not in composer.lock
+composer install                   # also installs qrcode/barcode packages missing from vendor/
+cp .env.example .env               # or edit your existing .env (see below)
+php artisan key:generate           # only for a brand-new .env
+# create an EMPTY MySQL database, e.g. fashion_house, and put it in DB_DATABASE
+php artisan migrate --seed
+php artisan storage:link
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Sign in with `FHMP_ADMIN_EMAIL` / `FHMP_ADMIN_PASSWORD` (default
+`admin@fashionhouse.test` / `password`) and change the password.
 
-## Learning Laravel
+Run the tests: `php artisan test` (uses in-memory SQLite).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tenancy
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+| `.env`                     | Meaning |
+|----------------------------|---------|
+| `TENANCY_MODE=multi`       | SaaS: many fashion houses, house switcher, platform "Fashion Houses" screen, self sign-up (`TENANCY_SELF_SIGNUP`). |
+| `TENANCY_MODE=single`      | One fashion house per installation (`TENANCY_DEFAULT_TENANT` slug). Same schema, so it can become SaaS later without migrations. |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+How it works:
 
-## Laravel Sponsors
+- `tenants` → `branches`, `tenant_memberships` (user ↔ house, status, home branch, owner flag).
+- **Every request runs inside one tenant**, resolved from the user's *active membership*
+  (`App\Http\Middleware\ResolveTenant` for web, `ResolveApiTenant` for the API with the
+  optional `X-Tenant` header). Client-supplied tenant ids are never trusted (SRS FR-TEN-003).
+- The tenant is resolved **before route-model binding**, so `/things/{thing}` can't load
+  another house's record.
+- Roles are per tenant (Spatie *teams*, `tenant_id`); permissions are global and listed in
+  `App\Support\PermissionCatalog` with the default roles from SRS §9.
+- `CurrentTenant::id()`, `CurrentTenant::get()`, `CurrentTenant::run($tenant, fn () => …)`.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Adding a business module (pattern)
 
-### Premium Partners
+1. Migration: `tenant_id` foreign key + composite uniques, e.g. `unique(['tenant_id', 'customer_number'])`;
+   money as integer minor units + `currency_code`.
+2. Model: `use App\Models\Concerns\BelongsToTenant;` — reads are scoped, `tenant_id` is filled
+   on create, and records can't move between tenants.
+3. Permissions: add them to `PermissionCatalog::GROUPS` (+ default roles), then
+   `php artisan fhmp:sync-permissions`.
+4. Controller: `$this->middleware('permission:View customer')`, audit privileged actions with
+   `AuditLogger::log('customer.merged', $model, $before, $after)`.
+5. Routes: `routes/web.php` (and `routes/api.php` under the `api.tenant` group);
+   menu item in `resources/views/layouts/partials/sidebar-menu.blade.php` (replace the "Soon" entry).
+6. Tests: copy `tests/Feature/TenantIsolationTest.php` for the new resource.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+## API v1
 
-## Contributing
+| Method | Endpoint | Notes |
+|--------|----------|-------|
+| POST | `/api/v1/auth/login` | `login` (email/username/phone), `password`, `device_name` → Bearer token + houses |
+| GET  | `/api/v1/me` | user, houses, current house, roles, permissions |
+| POST | `/api/v1/auth/logout` | revokes the current token |
+| POST | `/api/v1/auth/password` | change password (revokes other devices) |
+| GET  | `/api/v1/tenants` | houses the user can work in |
+| GET  | `/api/v1/tenants/current` | settings + branches of the current house (`X-Tenant` optional) |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Errors: `{ success:false, code, message, field_errors?, correlation_id }`. Every response
+carries `X-Request-Id`.
 
-## Code of Conduct
+## What was removed
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+All school-management code (students, classes, results, exams, CBT, timetable, LMS,
+payroll, accounting, website, parent portal…). It is still on the `main` branch.

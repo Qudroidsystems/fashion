@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Turns a raw permission name (e.g. "View student", "Manage payroll settings")
+ * Turns a raw permission name (e.g. "View customer", "Approve measurement")
  * into a friendly action chip + a plain-English description, so the role editor
  * can explain what each permission actually allows. Works for every permission
  * with no database changes; specific names can be given an exact description in
@@ -29,6 +29,7 @@ class PermissionMeta
         'Pay'      => ['Pay',     'Pay {x}.'],
         'Post'     => ['Post',    'Post {x} to the records / ledger.'],
         'Close'    => ['Close',   'Close {x}.'],
+        'Use'      => ['Access',  'Use {x}.'],
         'Download' => ['Download','Download {x}.'],
         'Print'    => ['Print',   'Print {x}.'],
         'Generate' => ['Generate','Generate {x}.'],
@@ -36,23 +37,32 @@ class PermissionMeta
         'Import'   => ['Import',  'Import {x}.'],
         'Send'     => ['Send',    'Send {x}.'],
         'Assign'   => ['Assign',  'Assign {x}.'],
+        'Record'   => ['Create',  'Record {x}.'],
+        'Cancel'   => ['Delete',  'Cancel {x} (reservations and balances are handled by policy).'],
+        'Merge'    => ['Manage',  'Merge {x}.'],
     ];
 
     /** Exact-name overrides for permissions the generic rule can't phrase well. */
     protected const OVERRIDES = [
-        'dashboard'                 => ['View',   'Open the main administration dashboard.'],
-        'finance dashboard'         => ['View',   'See the finance analytics dashboard.'],
-        'academics dashboard'       => ['View',   'See the academics analytics dashboard.'],
-        'View management dashboard' => ['View',   'See the management overview dashboard.'],
-        'Add user-role'             => ['Assign', 'Add users to this role.'],
-        'Update user-role'          => ['Edit',   'Change the users assigned to this role.'],
-        'Remove user-role'          => ['Remove', 'Remove users from this role.'],
-        'Manage maintenance mode'   => ['Manage', 'Turn the portal\'s maintenance mode on or off.'],
-        'Manage feature flags'      => ['Manage', 'Switch portal modules on or off (module access).'],
-        'Release salary payments'   => ['Release','Release staff salary payments — the money is sent.'],
-        'Manage payment gateways'   => ['Manage', 'Configure the payment gateways (Paystack, OPay).'],
-        'Close accounting period'   => ['Close',  'Lock the accounting books up to a date.'],
-        'Post journal entries'      => ['Post',   'Post entries directly into the general ledger.'],
+        'View dashboard'                => ['View',    'Open the fashion house dashboard.'],
+        'Update user-role'              => ['Assign',  'Add or remove staff in a role.'],
+        'Manage tenant settings'        => ['Manage',  'Change the fashion house profile, branding, currency and timezone.'],
+        'View customer sensitive notes' => ['View',    'See private customer notes and other sensitive details.'],
+        'Merge customer'                => ['Manage',  'Merge duplicate customer records into one.'],
+        'Approve measurement'           => ['Approve', 'Verify and approve measurement sessions (approved sessions cannot be edited).'],
+        'Capture measurement'           => ['Create',  'Take measurements and save or submit a session for review.'],
+        'Send measurement request'      => ['Send',    'Send a customer a secure link to submit their own measurements.'],
+        'Adjust stock'                  => ['Edit',    'Request stock count adjustments and corrections.'],
+        'Approve stock adjustment'      => ['Approve', 'Approve stock adjustments above the configured threshold.'],
+        'Issue material'                => ['Issue',   'Issue fabric and accessories from stock to production.'],
+        'Use POS'                       => ['Access',  'Make ready-made sales at the point of sale.'],
+        'Open cash shift'               => ['Open',    'Open a cashier shift with an opening float.'],
+        'Close cash shift'              => ['Close',   'Close a cashier shift and record the counted cash.'],
+        'Void sale'                     => ['Delete',  'Void a POS sale (requires a reason; audited).'],
+        'Override price'                => ['Edit',    'Change a price or apply a discount above the allowed limit.'],
+        'Approve refund'                => ['Approve', 'Approve and process refunds (audited).'],
+        'Publish project update'        => ['Approve', 'Publish a project milestone or update to the client.'],
+        'Send campaign'                 => ['Send',    'Send promotional messages to customers who have consented.'],
     ];
 
     /** ['action' => chip word, 'label' => readable name, 'desc' => sentence] */
@@ -82,7 +92,7 @@ class PermissionMeta
         return self::for($name)['action'];
     }
 
-    /** "student-report" / "online-fee-payments" => "student report / online fee payments" */
+    /** "user-role" / "purchase_order" => "user role" / "purchase order" */
     protected static function pretty(string $s): string
     {
         return trim(strtolower(str_replace(['-', '_'], ' ', $s)));
@@ -95,7 +105,8 @@ class PermissionMeta
             'View' => 'pm-chip-view', 'Preview' => 'pm-chip-view',
             'Create' => 'pm-chip-create', 'Add' => 'pm-chip-create',
             'Edit' => 'pm-chip-edit', 'Assign' => 'pm-chip-edit',
-            'Manage' => 'pm-chip-manage',
+            'Manage' => 'pm-chip-manage', 'Access' => 'pm-chip-manage',
+            'Issue' => 'pm-chip-edit', 'Open' => 'pm-chip-create',
             'Delete' => 'pm-chip-delete', 'Remove' => 'pm-chip-delete', 'Close' => 'pm-chip-delete',
             'Approve' => 'pm-chip-approve', 'Submit' => 'pm-chip-approve', 'Post' => 'pm-chip-approve',
             'Release' => 'pm-chip-money', 'Pay' => 'pm-chip-money',

@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Fashion House Platform'),
 
     /*
     |--------------------------------------------------------------------------
@@ -68,7 +68,9 @@ return [
     |
     */
 
-    'timezone' => 'Africa/Lagos',  // Updated: UTC+1 for West Africa (e.g., Nigeria)
+    // Stored timestamps are UTC (SRS §10.1). Each tenant's own timezone is used
+    // for display and for calendar rules — see App\Support\Tenancy\TenantContext.
+    'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
     |--------------------------------------------------------------------------
@@ -151,10 +153,6 @@ return [
         * Application Service Providers...
         */
         App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
     ])->toArray(),
 
     /*
@@ -174,8 +172,6 @@ return [
         'PDF' => Barryvdh\DomPDF\Facade::class, // ✅ Using DomPDF
     ])->toArray(),
 
-    // Add at the bottom of config/app.php
-    'student_email_domain' => env('STUDENT_EMAIL_DOMAIN', '@csskabba.ng'),
 
 ];
 

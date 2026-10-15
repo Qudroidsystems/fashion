@@ -281,7 +281,7 @@ body{font-family:var(--rol-font);}
     {{-- Hero --}}
     <div class="rol-hero">
         <h1><i class="bi bi-shield-fill-check me-2"></i>{{ $role->name }} — Role Details</h1>
-        <p>Manage permissions and users assigned to this role.</p>
+        <p>{{ $role->description ?: "Manage permissions and users assigned to this role." }}</p>
         <div class="rol-hero-actions">
             <a href="{{ route('roles.index') }}" class="rol-btn rol-btn-back">
                 <i class="bi bi-arrow-left"></i> Back to Roles
@@ -319,9 +319,15 @@ body{font-family:var(--rol-font);}
                     </span>
                 </div>
                 <div class="rol-card-body">
+                    @can('Update role')
+                    @if($role->isOwnerRole())
+                    <div class="rol-info-banner"><i class="bi bi-lock-fill me-1"></i> The Owner role always has every permission.</div>
+                    @else
                     <button type="button" class="edit-role-btn" data-bs-toggle="modal" data-bs-target="#editRoleModalgrid">
                         <i class="bi bi-pencil-square"></i> Edit Role & Permissions
                     </button>
+                    @endif
+                    @endcan
                     @forelse($rolePermissions as $rm)
                     <div class="perm-list-item">
                         <i class="bi bi-check-circle-fill"></i>
@@ -346,7 +352,7 @@ body{font-family:var(--rol-font);}
                             {{ $userRoleCount }}
                         </span>
                     </h5>
-                    @can('Remove user-role')
+                    @can('Update user-role')
                     <button type="button" class="rol-btn rol-btn-danger" id="bulkRemoveBtn"
                             style="display:none;padding:7px 14px;font-size:12.5px;">
                         <i class="bi bi-person-x-fill"></i> Remove Selected
@@ -365,7 +371,7 @@ body{font-family:var(--rol-font);}
                                     <th>Name</th>
                                     <th>Email</th>
                                     <th>Joined</th>
-                                    @can('Remove user-role')
+                                    @can('Update user-role')
                                     <th width="80">Action</th>
                                     @endcan
                                 </tr>
@@ -391,12 +397,12 @@ body{font-family:var(--rol-font);}
                                     <td style="font-size:12px;color:var(--rol-muted);">
                                         {{ \Carbon\Carbon::parse($u->created_at)->format('d M Y') }}
                                     </td>
-                                    @can('Remove user-role')
+                                    @can('Update user-role')
                                     <td>
                                         <button type="button" class="remove-user-btn"
                                                 data-user-id="{{ $u->id }}"
                                                 data-user-name="{{ $u->username }}"
-                                                data-url="/roles/{{ $u->id }}/{{ $role->id }}/removeuser"
+                                                data-url="{{ route('roles.removeuserrole', ['userid' => $u->id, 'roleid' => $role->id]) }}"
                                                 data-bs-toggle="modal" data-bs-target="#deleteRecordModal"
                                                 title="Remove from role">
                                             <i class="bi bi-person-x-fill"></i>
@@ -473,111 +479,36 @@ body{font-family:var(--rol-font);}
                     <input type="hidden" name="roleid" value="{{ $role->id }}">
                     <div class="modal-body">
 
-                        {{-- Tabs --}}
-                        <div class="rol-nav-tabs" role="tablist">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#staff-tab" type="button">
-                                <i class="fas fa-user-tie"></i> Staff
-                                <span style="background:var(--rol-accent);color:#fff;border-radius:12px;padding:1px 8px;font-size:10px;" id="staff-count">0</span>
-                            </button>
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#student-tab" type="button">
-                                <i class="fas fa-user-graduate"></i> Students
-                                <span style="background:var(--rol-success);color:#fff;border-radius:12px;padding:1px 8px;font-size:10px;" id="student-count">0</span>
-                            </button>
-                        </div>
-
                         <div class="rol-info-banner">
                             <i class="bi bi-info-circle-fill me-1"></i>
                             Selected: <strong id="selected-count">0</strong> user(s).
-                            Click a card or checkbox to select.
+                            Click a card or checkbox to select. Only staff of {{ $brand['name'] }} are listed.
                         </div>
 
-                        <div class="tab-content">
-                            {{-- STAFF --}}
-                            <div class="tab-pane fade show active" id="staff-tab">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span style="font-size:12px;font-weight:700;color:var(--rol-muted);text-transform:uppercase;letter-spacing:.5px;">Staff Members</span>
-                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--rol-accent);">
-                                        <input type="checkbox" class="rol-checkbox" id="select-all-staff">
-                                        Select All
-                                    </label>
-                                </div>
-                                <div class="row g-2" id="staff-list-container">
-                                    @php
-                                        $allUsersNotInRole = \App\Models\User::whereDoesntHave('roles', function ($q) use ($role) {
-                                            $q->where('name', $role->name);
-                                        })->get();
-                                        $staffUsers = $allUsersNotInRole->filter(function ($user) {
-                                            if ($user->staffemploymentDetails) return true;
-                                            if ($user->staffPicture) return true;
-                                            if (!$user->student_id) return true;
-                                            return false;
-                                        })->reject(function ($user) {
-                                            if ($user->student) return true;
-                                            return false;
-                                        })->sortBy('name');
-                                    @endphp
-                                    @forelse($staffUsers as $staff)
-                                    @php $sInit = strtoupper(substr($staff->name,0,1)); @endphp
-                                    <div class="col-xl-4 col-lg-6">
-                                        <div class="user-card-sel" data-user-id="{{ $staff->id }}">
-                                            <div class="usr-avatar-sm">{{ $sInit }}</div>
-                                            <div class="ucs-info">
-                                                <div class="ucs-name">{{ $staff->name }}</div>
-                                                <div class="ucs-meta">{{ $staff->email }}</div>
-                                            </div>
-                                            <div class="ucs-check">
-                                                <input type="checkbox" value="{{ $staff->id }}" name="users[]"
-                                                       class="staff-checkbox user-checkbox" id="staff-{{ $staff->id }}">
-                                            </div>
-                                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span style="font-size:12px;font-weight:700;color:var(--rol-muted);text-transform:uppercase;letter-spacing:.5px;">
+                                Staff Members <span id="staff-count" style="background:var(--rol-accent);color:#fff;border-radius:12px;padding:1px 8px;font-size:10px;">0</span>
+                            </span>
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--rol-accent);">
+                                <input type="checkbox" class="rol-checkbox" id="select-all-staff"> Select all
+                            </label>
+                        </div>
+                        <div class="row g-2" id="staff-list-container">
+                            @forelse($candidates as $staff)
+                            <div class="col-md-6 col-lg-4">
+                                <div class="user-card-sel" data-user-id="{{ $staff->id }}">
+                                    <div class="usr-avatar-sm">{{ $staff->initials }}</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div class="ucs-name">{{ $staff->name }}</div>
+                                        <div class="ucs-meta">{{ $staff->email }}</div>
                                     </div>
-                                    @empty
-                                    <div class="col-12"><div class="rol-info-banner">No staff members available.</div></div>
-                                    @endforelse
+                                    <input type="checkbox" value="{{ $staff->id }}" name="users[]"
+                                           class="staff-checkbox user-checkbox rol-checkbox" id="staff-{{ $staff->id }}">
                                 </div>
                             </div>
-
-                            {{-- STUDENTS --}}
-                            <div class="tab-pane fade" id="student-tab">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span style="font-size:12px;font-weight:700;color:var(--rol-muted);text-transform:uppercase;letter-spacing:.5px;">Students</span>
-                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--rol-accent);">
-                                        <input type="checkbox" class="rol-checkbox" id="select-all-students">
-                                        Select All
-                                    </label>
-                                </div>
-                                <div class="row g-2" id="student-list-container">
-                                    @php
-                                        $studentUsers = $allUsersNotInRole->filter(function ($user) {
-                                            return $user->student_id || $user->student;
-                                        })->sortBy('name');
-                                    @endphp
-                                    @forelse($studentUsers as $studentUser)
-                                    @php $stInit = strtoupper(substr($studentUser->name,0,1)); @endphp
-                                    <div class="col-xl-4 col-lg-6">
-                                        <div class="user-card-sel" data-user-id="{{ $studentUser->id }}">
-                                            <div class="usr-avatar-sm" style="background:linear-gradient(135deg,#10b981,#059669);">{{ $stInit }}</div>
-                                            <div class="ucs-info">
-                                                <div class="ucs-name">{{ $studentUser->name }}</div>
-                                                <div class="ucs-meta">
-                                                    @if($studentUser->student?->admissionNo)
-                                                        {{ $studentUser->student->admissionNo }}
-                                                    @else
-                                                        {{ $studentUser->email }}
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div class="ucs-check">
-                                                <input type="checkbox" value="{{ $studentUser->id }}" name="users[]"
-                                                       class="student-checkbox user-checkbox" id="student-{{ $studentUser->id }}">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @empty
-                                    <div class="col-12"><div class="rol-info-banner">No students available.</div></div>
-                                    @endforelse
-                                </div>
-                            </div>
+                            @empty
+                            <div class="col-12"><div class="rol-info-banner">Everyone on your staff already has this role.</div></div>
+                            @endforelse
                         </div>
 
                     </div>
@@ -606,21 +537,15 @@ body{font-family:var(--rol-font);}
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="rol-form-label">Role Name</label>
-                                <input type="text" class="rol-form-control" name="name" value="{{ old('name',$role->name) }}" required>
+                                <input type="text" class="rol-form-control" name="name" value="{{ old('name',$role->name) }}" required @if($role->is_system) readonly title="Default roles keep their name" @endif>
+                            </div>
+                            <div class="col-12">
+                                <label class="rol-form-label">Description</label>
+                                <input type="text" class="rol-form-control" name="description" value="{{ old('description',$role->description) }}" maxlength="255" placeholder="What this role is for">
                             </div>
                             <div class="col-md-6">
                                 <label class="rol-form-label">Badge Colour</label>
-                                <select name="badge" class="rol-form-control">
-                                    <option value="">None</option>
-                                    <option value="badge bg-light"     {{ $role->badge=='badge bg-light'?'selected':'' }}>Light Grey</option>
-                                    <option value="badge bg-dark"      {{ $role->badge=='badge bg-dark'?'selected':'' }}>Dark</option>
-                                    <option value="badge bg-primary"   {{ $role->badge=='badge bg-primary'?'selected':'' }}>Blue</option>
-                                    <option value="badge bg-secondary" {{ $role->badge=='badge bg-secondary'?'selected':'' }}>Light Blue</option>
-                                    <option value="badge bg-success"   {{ $role->badge=='badge bg-success'?'selected':'' }}>Green</option>
-                                    <option value="badge bg-info"      {{ $role->badge=='badge bg-info'?'selected':'' }}>Purple</option>
-                                    <option value="badge bg-warning"   {{ $role->badge=='badge bg-warning'?'selected':'' }}>Yellow</option>
-                                    <option value="badge bg-danger"    {{ $role->badge=='badge bg-danger'?'selected':'' }}>Red</option>
-                                </select>
+                                <input type="color" name="badge" class="rol-form-control form-control-color w-100" value="{{ old('badge', $role->badge ?: '#405189') }}" title="Colour used for this role's chips">
                             </div>
                         </div>
 
@@ -783,11 +708,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initAddUserModal() {
         const staffCbs   = document.querySelectorAll('#addUserModalgrid .staff-checkbox');
-        const studentCbs = document.querySelectorAll('#addUserModalgrid .student-checkbox');
         const allCbs     = document.querySelectorAll('#addUserModalgrid .user-checkbox');
 
         document.getElementById('staff-count').textContent   = staffCbs.length;
-        document.getElementById('student-count').textContent = studentCbs.length;
 
         function updateCount() {
             const n = document.querySelectorAll('#addUserModalgrid .user-checkbox:checked').length;
@@ -813,12 +736,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Select all staff
         document.getElementById('select-all-staff')?.addEventListener('change', function() {
             staffCbs.forEach(c=>{ c.checked=this.checked; c.closest('.user-card-sel')?.classList.toggle('selected',this.checked); });
-            updateCount();
-        });
-
-        // Select all students
-        document.getElementById('select-all-students')?.addEventListener('change', function() {
-            studentCbs.forEach(c=>{ c.checked=this.checked; c.closest('.user-card-sel')?.classList.toggle('selected',this.checked); });
             updateCount();
         });
 

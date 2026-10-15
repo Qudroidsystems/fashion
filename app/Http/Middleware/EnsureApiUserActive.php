@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 class EnsureApiUserActive
 {
     protected array $allowedWhileTemporary = [
-        'api.v1.auth.me', 'api.v1.auth.password', 'api.v1.auth.logout', 'api.v1.devices.store',
+        'api.v1.auth.me', 'api.v1.auth.password', 'api.v1.auth.logout',
     ];
 
     public function handle(Request $request, Closure $next)
@@ -27,7 +27,7 @@ class EnsureApiUserActive
             return response()->json([
                 'success' => false,
                 'code'    => 'account_disabled',
-                'message' => 'This account has been disabled. Please contact the school.',
+                'message' => 'This account has been disabled. Please contact your administrator.',
             ], 403);
         }
 

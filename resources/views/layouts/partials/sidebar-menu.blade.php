@@ -1,0 +1,162 @@
+{{--
+    Sidebar menu. Items are permission-gated with @can.
+    "Soon" items are the SRS modules still to be built: when a module lands,
+    replace its href with the real route and drop the badge.
+--}}
+@php
+    $soon = [
+        ['perm' => 'View measurement', 'icon' => 'ri-ruler-2-line',         'label' => 'Measurements'],
+        ['perm' => 'View style',       'icon' => 'ri-t-shirt-air-line',     'label' => 'Styles & Catalogue'],
+        ['perm' => 'View inventory',   'icon' => 'ri-archive-line',   'label' => 'Inventory'],
+        ['perm' => 'View order',       'icon' => 'ri-file-list-3-line',     'label' => 'Orders & Quotes'],
+        ['perm' => 'Use POS',          'icon' => 'ri-shopping-cart-2-line', 'label' => 'Point of Sale'],
+        ['perm' => 'View production',  'icon' => 'ri-scissors-cut-line',    'label' => 'Production'],
+        ['perm' => 'View project',     'icon' => 'ri-heart-2-line',         'label' => 'Weddings & Projects'],
+        ['perm' => 'View payment',     'icon' => 'ri-bank-card-line',       'label' => 'Payments'],
+        ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
+    ];
+    $u = auth()->user();
+@endphp
+
+<li class="menu-title"><span data-key="t-menu">Menu</span></li>
+
+@if($currentTenant)
+    @can('View dashboard')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+            <i class="ph-gauge"></i> <span>Dashboard</span>
+        </a>
+    </li>
+    @endcan
+
+    {{-- FASHION HOUSE MODULES --}}
+    @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
+    @if($visibleSoon->count() || $u->can('View customer'))
+        <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
+    @endif
+
+    @can('View customer')
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ request()->routeIs('customers.*', 'follow-ups.*') ? 'active' : '' }}" href="#sidebarCustomers" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ request()->routeIs('customers.*', 'follow-ups.*') ? 'true' : 'false' }}" aria-controls="sidebarCustomers">
+            <i class="ri-user-heart-line"></i> <span>Customers</span>
+        </a>
+        <div class="collapse menu-dropdown {{ request()->routeIs('customers.*', 'follow-ups.*') ? 'show' : '' }}" id="sidebarCustomers">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item"><a href="{{ route('customers.index') }}" class="nav-link {{ request()->routeIs('customers.index') ? 'active' : '' }}">All customers</a></li>
+                @can('Create customer')
+                <li class="nav-item"><a href="{{ route('customers.create') }}" class="nav-link {{ request()->routeIs('customers.create') ? 'active' : '' }}">New customer</a></li>
+                @endcan
+                <li class="nav-item"><a href="{{ route('follow-ups.index') }}" class="nav-link {{ request()->routeIs('follow-ups.*') ? 'active' : '' }}">Follow-ups</a></li>
+            </ul>
+        </div>
+    </li>
+    @endcan
+
+    @if($visibleSoon->count())
+        @foreach($visibleSoon as $m)
+        <li class="nav-item">
+            <a class="nav-link menu-link sidebar-soon" href="javascript:void(0)" title="Coming in a later phase" aria-disabled="true">
+                <i class="{{ $m['icon'] }}"></i> <span>{{ $m['label'] }}</span>
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary ms-auto" style="font-size:9px;">Soon</span>
+            </a>
+        </li>
+        @endforeach
+    @endif
+
+    {{-- USERS & ACCESS --}}
+    @if($u->can('View user') || $u->can('View role') || $u->can('View audit log'))
+        <li class="menu-title"><i class="ri-more-fill"></i> <span>Users &amp; Access</span></li>
+    @endif
+
+    @can('View user')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+            <i class="ph-user-circle"></i> <span>Staff &amp; Users</span>
+        </a>
+    </li>
+    @endcan
+
+    @canany(['View role', 'View permission'])
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed" href="#sidebarroles" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarroles">
+            <i class="ph-shield-check"></i> <span>Roles &amp; Permissions</span>
+        </a>
+        <div class="collapse menu-dropdown" id="sidebarroles">
+            <ul class="nav nav-sm flex-column">
+                @can('View role')
+                    <li class="nav-item"><a href="{{ route('roles.index') }}" class="nav-link">Roles</a></li>
+                @endcan
+                @can('View permission')
+                    <li class="nav-item"><a href="{{ route('permissions.index') }}" class="nav-link">Permissions</a></li>
+                @endcan
+            </ul>
+        </div>
+    </li>
+    @endcanany
+
+    @can('View audit log')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="{{ route('audit-logs.index') }}">
+            <i class="ri-shield-check-line"></i> <span>Audit Log</span>
+        </a>
+    </li>
+    @endcan
+
+    {{-- SETTINGS --}}
+    @canany(['Manage tenant settings', 'View branch', 'Manage branch'])
+        <li class="menu-title"><i class="ri-more-fill"></i> <span>Settings</span></li>
+        @can('Manage tenant settings')
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('settings.tenant.*') ? 'active' : '' }}" href="{{ route('settings.tenant.edit') }}">
+                <i class="ri-store-2-line"></i> <span>House Settings</span>
+            </a>
+        </li>
+        @endcan
+        @canany(['View branch', 'Manage branch'])
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('settings.branches.*') ? 'active' : '' }}" href="{{ route('settings.branches.index') }}">
+                <i class="ri-building-4-line"></i> <span>Branches &amp; Locations</span>
+            </a>
+        </li>
+        @endcanany
+    @endcanany
+@endif
+
+{{-- PLATFORM (SaaS operator) --}}
+@if($u->is_platform_admin && config('tenancy.mode') !== 'single')
+    <li class="menu-title"><i class="ri-more-fill"></i> <span>Platform</span></li>
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('platform.tenants.*') ? 'active' : '' }}" href="{{ route('platform.tenants.index') }}">
+            <i class="ri-community-line"></i> <span>Fashion Houses</span>
+        </a>
+    </li>
+@endif
+
+{{-- MY ACCOUNT --}}
+<li class="menu-title"><i class="ri-more-fill"></i> <span>My Account</span></li>
+<li class="nav-item">
+    <a class="nav-link menu-link collapsed" href="#sidebaraccount" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebaraccount">
+        <i class="ph-address-book"></i> <span>My Account</span>
+    </a>
+    <div class="collapse menu-dropdown" id="sidebaraccount">
+        <ul class="nav nav-sm flex-column">
+            @if($currentTenant && $u->can('View user'))
+            <li class="nav-item">
+                <a href="{{ route('users.show', $u->id) }}" class="nav-link"><i class="ri-profile-line me-2"></i> My Profile</a>
+            </li>
+            @endif
+            <li class="nav-item">
+                <a href="{{ route('profile.settings') }}" class="nav-link"><i class="ri-settings-3-line me-2"></i> Account Settings</a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('profile.settings', ['tab' => 'security']) }}" class="nav-link ps-4"><i class="ri-lock-password-line me-2"></i> Change Password</a>
+            </li>
+            @if($currentTenant)
+            <li class="nav-item">
+                <a href="{{ route('notifications.index') }}" class="nav-link ps-4"><i class="ri-notification-3-line me-2"></i> Notifications</a>
+            </li>
+            @endif
+        </ul>
+    </div>
+</li>

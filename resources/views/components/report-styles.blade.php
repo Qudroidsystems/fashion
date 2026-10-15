@@ -163,8 +163,8 @@
     min-width: 45px;
 }
 
-/* Student Avatar */
-.student-avatar {
+/* Customer / person avatar */
+.person-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -173,12 +173,12 @@
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
-.student-avatar:hover {
+.person-avatar:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(37,99,235,.3);
     border-color: var(--report-accent);
 }
-.student-avatar-placeholder {
+.person-avatar-placeholder {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -192,7 +192,7 @@
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
-.student-avatar-placeholder:hover {
+.person-avatar-placeholder:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(124,58,237,.3);
 }
