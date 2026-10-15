@@ -53,6 +53,7 @@
                     @if($i->status === 'issued' && $bal > 0)
                         @can('Record payment')<a href="{{ route('payments.create', ['invoice' => $i->public_id]) }}" class="action-btn btn-primary-cb justify-content-center py-2"><i class="ri-bank-card-line"></i>Record payment</a>@endcan
                     @endif
+                    @if($i->status === 'issued')@include('orders.partials.pay-link', ['target' => 'invoice', 'model' => $i, 'due' => max(0, $bal)])@endif
                     @if($i->status === 'issued' && $u->can('Manage invoice'))
                         <button type="button" class="action-btn justify-content-center text-danger" data-bs-toggle="collapse" data-bs-target="#voidBox"><i class="ri-close-circle-line"></i>Void</button>
                         <div class="collapse" id="voidBox"><form method="POST" action="{{ route('invoices.void', $i) }}">@csrf

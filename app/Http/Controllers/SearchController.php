@@ -71,6 +71,11 @@ class SearchController extends Controller
                 ->each(fn ($p) => $results->push(['title' => $p->number, 'url' => route('payments.show', $p), 'icon' => 'mdi-cash', 'category' => 'Payments', 'subtitle' => \App\Support\Money::format($p->amount) . ($p->reference ? ' · ' . $p->reference : '')]));
         }
 
+        if ($user->can('Use POS')) {
+            \App\Models\Sale::where('number', 'like', $like)->latest('id')->limit(4)->get(['id', 'public_id', 'number', 'total', 'status'])
+                ->each(fn ($s) => $results->push(['title' => $s->number, 'url' => route('pos.sales.show', $s), 'icon' => 'mdi-cash-register', 'category' => 'POS sales', 'subtitle' => \App\Support\Money::format($s->total) . ($s->status === 'voided' ? ' · voided' : '')]));
+        }
+
         if ($user->can('View inventory')) {
             \App\Models\InventoryItem::active()->search($q)->limit(6)->get(['id', 'public_id', 'name', 'code', 'unit'])
                 ->each(fn ($i) => $results->push([

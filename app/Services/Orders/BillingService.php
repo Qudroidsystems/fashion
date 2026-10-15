@@ -198,6 +198,8 @@ class BillingService
                 'notes'       => $data['notes'] ?? null,
                 'received_by' => auth()->id(),
                 'status'      => 'confirmed',
+                'sale_id'     => $data['sale_id'] ?? null,
+                'channel'     => $data['channel'] ?? 'counter',
             ]);
 
             if (! empty($data['invoice_id'])) {

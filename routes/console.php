@@ -96,6 +96,26 @@ Artisan::command('fhmp:stock-reconcile {--fix : rebuild balances from the ledger
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:stock-reconcile')->dailyAt('02:30');
 
+/* FR-ORD-008: re-check online payments still pending (a missed webhook never loses a payment). */
+Artisan::command('fhmp:verify-payments', function () {
+    $n = 0;
+    \App\Models\PaymentIntent::withoutGlobalScopes()->where('status', 'pending')->whereNotNull('authorization_url')
+        ->where('created_at', '>=', now()->subDays(3))->get()
+        ->each(function ($intent) use (&$n) {
+            $tenant = \App\Models\Tenant::find($intent->tenant_id);
+            \App\Support\Tenancy\CurrentTenant::run($tenant, function () use ($intent, &$n) {
+                try {
+                    $n += (int) (app(\App\Services\Payments\OnlinePaymentService::class)->confirm($intent)->status === 'succeeded');
+                } catch (\Throwable $e) {
+                    $this->warn("  {$intent->reference}: {$e->getMessage()}");
+                }
+            });
+        });
+    $this->info("{$n} online payment(s) confirmed.");
+})->purpose('Verify pending online payments with the provider');
+
+\Illuminate\Support\Facades\Schedule::command('fhmp:verify-payments')->everyFifteenMinutes();
+
 /*
 | Scheduled jobs (birthdays, measurement reviews, fittings, overdue payments…)
 | are registered here with Schedule::command(...) as the modules land.

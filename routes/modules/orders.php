@@ -49,3 +49,8 @@ Route::post('/payments/{payment}/reverse', [PaymentController::class, 'reverse']
 Route::post('/payments/{payment}/refunds', [PaymentController::class, 'requestRefund'])->name('payments.refund');
 Route::post('/refunds/{refund}/approve', [PaymentController::class, 'approveRefund'])->name('refunds.approve');
 Route::post('/refunds/{refund}/reject', [PaymentController::class, 'rejectRefund'])->name('refunds.reject');
+
+// Online payment links (Paystack)
+Route::post('/orders/{order}/payment-link', [\App\Http\Controllers\Payments\PaymentLinkController::class, 'forOrder'])->name('orders.payment-link');
+Route::post('/invoices/{invoice}/payment-link', [\App\Http\Controllers\Payments\PaymentLinkController::class, 'forInvoice'])->name('invoices.payment-link');
+Route::post('/payment-intents/{intent}/check', [\App\Http\Controllers\Payments\PaymentLinkController::class, 'check'])->name('payment-intents.check');

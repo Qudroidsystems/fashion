@@ -45,6 +45,11 @@ Route::post('/m/{token}', [\App\Http\Controllers\Measurements\PublicMeasurementC
 |--------------------------------------------------------------------------
 */
 
+// Online payments (SRS FR-ORD-008, FR-ADM-004): provider webhook per house and the customer's return page.
+Route::post('/webhooks/paystack/{tenant}', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'webhook'])
+    ->where('tenant', '[0-9A-Za-z]{26}')->middleware('throttle:120,1')->name('webhooks.paystack');
+Route::get('/pay/return', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'return'])->middleware('throttle:30,1')->name('pay.return');
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -101,4 +106,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/catalogue.php';
     require __DIR__ . '/modules/inventory.php';
     require __DIR__ . '/modules/orders.php';
+    require __DIR__ . '/modules/pos.php';
 });

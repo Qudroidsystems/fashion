@@ -69,7 +69,7 @@ class DemoInventorySeeder extends Seeder
             }
 
             // Opening stock at the shop.
-            $opening = $docs->saveAdjustment(null, ['kind' => 'opening', 'branch_id' => $shop->id, 'reason' => 'Stock at go-live'], [
+            $openingLines = [
                 ['item_id' => $it['Ankara print']->id, 'quantity' => 64, 'unit_cost' => 2500],
                 ['item_id' => $it['Satin lining']->id, 'quantity' => 45.5, 'unit_cost' => 1200],
                 ['item_id' => $it['Invisible zip 22"']->id, 'quantity' => 80, 'unit_cost' => 250],
@@ -77,7 +77,12 @@ class DemoInventorySeeder extends Seeder
                 ['item_id' => $it['Polyester thread']->id, 'quantity' => 7, 'unit_cost' => 900],
                 ['item_id' => $it['Fusible interfacing']->id, 'quantity' => 18, 'unit_cost' => 700],
                 ['item_id' => $it['Aso-oke']->id, 'quantity' => 6, 'unit_cost' => 18000],
-            ]);
+            ];
+            // Ready-made products from the demo catalogue (if seeded), so the till has something to sell.
+            InventoryItem::whereNotNull('product_variant_id')->with('productVariant')->get()->each(function ($i) use (&$openingLines) {
+                $openingLines[] = ['item_id' => $i->id, 'quantity' => 6, 'unit_cost' => (float) ($i->productVariant?->cost_price ?: 5000)];
+            });
+            $opening = $docs->saveAdjustment(null, ['kind' => 'opening', 'branch_id' => $shop->id, 'reason' => 'Stock at go-live'], $openingLines);
             $docs->submitAdjustment($opening, $owner);
 
             // Lace bought on a PO into the warehouse, received in two rolls.

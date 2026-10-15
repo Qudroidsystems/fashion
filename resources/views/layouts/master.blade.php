@@ -988,6 +988,11 @@
         @can('Record payment')
         {title:'Record payment',         url:'{{ route("payments.create") }}',         icon:'mdi-cash-plus',      category:'Orders',           keywords:['record','payment','deposit','pay']},
         @endcan
+        @can('Use POS')
+        {title:'Till (POS)',             url:'{{ route("pos.terminal") }}',            icon:'mdi-cash-register',  category:'Point of Sale',    keywords:['pos','till','sell','sale','checkout','cashier','shop']},
+        {title:'POS sales',              url:'{{ route("pos.sales.index") }}',         icon:'mdi-receipt',        category:'Point of Sale',    keywords:['sales','receipt','return','void']},
+        {title:'Cash shifts',            url:'{{ route("pos.shifts.index") }}',        icon:'mdi-safe',           category:'Point of Sale',    keywords:['shift','drawer','float','cash','close','variance']},
+        @endcan
         @can('View inventory')
         {title:'Stock',                  url:'{{ route("inventory.index") }}',         icon:'mdi-package-variant', category:'Inventory',       keywords:['stock','inventory','fabric','lace','material','store','warehouse','low']},
         {title:'Purchase orders',        url:'{{ route("purchase-orders.index") }}',   icon:'mdi-file-document-outline', category:'Inventory', keywords:['purchase','order','po','buy','supplier']},
