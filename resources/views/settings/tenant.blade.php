@@ -101,6 +101,23 @@
                     </div>
                 </x-cb.card>
 
+                <x-cb.card title="Orders & payments" icon="ri-file-list-3-line" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Usual deposit</label>
+                            <div class="input-group"><input type="number" min="0" max="100" step="1" name="deposit_percent" class="form-control" value="{{ old('deposit_percent', $tenant->setting('deposit_percent', 50)) }}"><span class="input-group-text">%</span></div>
+                            <div class="form-text">Suggested deposit on new orders; can be changed per order.</div></div>
+                        <div class="col-md-6"><label class="form-label">Discount limit</label>
+                            <div class="input-group"><input type="number" min="0" max="100" step="0.5" name="discount_limit_percent" class="form-control" value="{{ old('discount_limit_percent', $tenant->setting('discount_limit_percent', 10)) }}"><span class="input-group-text">%</span></div>
+                            <div class="form-text">Bigger discounts, and prices below the catalogue, need someone allowed to override prices.</div></div>
+                        <div class="col-md-6"><label class="form-label">Refund approval limit</label>
+                            <div class="input-group"><span class="input-group-text">{{ \App\Support\Money::symbol($tenant->currency_code) }}</span>
+                                <input type="number" min="0" step="1" name="refund_approval_threshold" class="form-control" value="{{ old('refund_approval_threshold', $tenant->setting('refund_approval_threshold', 0)) }}"></div>
+                            <div class="form-text">Refunds above this need someone other than the person who asked for them (0 = every refund).</div></div>
+                        <div class="col-md-6"><label class="form-label">Quotations valid for</label>
+                            <div class="input-group"><input type="number" min="1" max="365" name="quotation_valid_days" class="form-control" value="{{ old('quotation_valid_days', $tenant->setting('quotation_valid_days', 14)) }}"><span class="input-group-text">days</span></div></div>
+                    </div>
+                </x-cb.card>
+
                 <x-cb.card title="Document numbering" icon="ri-hashtag" class="mt-3">
                     <p class="small text-muted">Tokens: <code>{YYYY}</code> year, <code>{MM}</code> month, <code>{SEQ:5}</code> running number padded to 5 digits. Numbers are unique within your fashion house.</p>
                     <div class="row g-3">

@@ -972,6 +972,22 @@
         @can('View product')
         {title:'Ready-made Products',    url:'{{ route("products.index") }}',          icon:'mdi-shopping',       category:'Catalogue',        keywords:['product','sku','barcode','ready','rack','shop']},
         @endcan
+        @can('View order')
+        {title:'Orders',                 url:'{{ route("orders.index") }}',            icon:'mdi-clipboard-text', category:'Orders',           keywords:['order','job','garment','delivery','due','late']},
+        @endcan
+        @can('Create order')
+        {title:'New order',              url:'{{ route("orders.create") }}',           icon:'mdi-clipboard-plus', category:'Orders',           keywords:['new','order','book','job']},
+        @endcan
+        @can('Manage quotation')
+        {title:'Quotations',             url:'{{ route("quotations.index") }}',        icon:'mdi-file-document-edit', category:'Orders',       keywords:['quote','quotation','estimate','price']},
+        @endcan
+        @can('View payment')
+        {title:'Payments',               url:'{{ route("payments.index") }}',          icon:'mdi-cash',           category:'Orders',           keywords:['payment','receipt','deposit','refund','transfer','cash']},
+        {title:'Invoices',               url:'{{ route("invoices.index") }}',          icon:'mdi-receipt',        category:'Orders',           keywords:['invoice','bill','unpaid','owing','balance']},
+        @endcan
+        @can('Record payment')
+        {title:'Record payment',         url:'{{ route("payments.create") }}',         icon:'mdi-cash-plus',      category:'Orders',           keywords:['record','payment','deposit','pay']},
+        @endcan
         @can('View inventory')
         {title:'Stock',                  url:'{{ route("inventory.index") }}',         icon:'mdi-package-variant', category:'Inventory',       keywords:['stock','inventory','fabric','lace','material','store','warehouse','low']},
         {title:'Purchase orders',        url:'{{ route("purchase-orders.index") }}',   icon:'mdi-file-document-outline', category:'Inventory', keywords:['purchase','order','po','buy','supplier']},
@@ -1016,7 +1032,7 @@
 
     /* ── category colours ── */
     var CAT_COLORS = {
-        'General':'#4f8ef7','Customers':'#0d9488','Inventory':'#b45309','Catalogue':'#c2410c','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
+        'General':'#4f8ef7','Customers':'#0d9488','Inventory':'#b45309','Orders':'#be185d','Catalogue':'#c2410c','Users & Access':'#405189','Settings':'#6a0572','My Account':'#2a9d8f','Platform':'#e76f51'
     };
 
     /* ── popular / suggestion chips ── */

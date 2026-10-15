@@ -54,6 +54,10 @@ class TenantSettingsController extends Controller
             'stock_approval_threshold' => 'nullable|numeric|min:0|max:1000000000',
             'po_approval_threshold'    => 'nullable|numeric|min:0|max:1000000000',
             'allow_negative_stock'     => 'nullable|boolean',
+            'deposit_percent'          => 'nullable|numeric|min:0|max:100',
+            'discount_limit_percent'   => 'nullable|numeric|min:0|max:100',
+            'refund_approval_threshold'=> 'nullable|numeric|min:0|max:1000000000',
+            'quotation_valid_days'     => 'nullable|integer|min:1|max:365',
             'numbering'                => 'nullable|array',
             'numbering.*'              => ['nullable', 'string', 'max:40', 'regex:/\{SEQ(:\d)?\}/'],
         ], [
@@ -83,6 +87,9 @@ class TenantSettingsController extends Controller
         $settings['stock_approval_threshold'] = (float) ($data['stock_approval_threshold'] ?? $settings['stock_approval_threshold'] ?? 20000);
         $settings['po_approval_threshold'] = (float) ($data['po_approval_threshold'] ?? $settings['po_approval_threshold'] ?? 100000);
         $settings['allow_negative_stock'] = (bool) ($data['allow_negative_stock'] ?? false);
+        foreach (['deposit_percent' => 50, 'discount_limit_percent' => 10, 'refund_approval_threshold' => 0, 'quotation_valid_days' => 14] as $k => $default) {
+            $settings[$k] = isset($data[$k]) ? (float) $data[$k] : ($settings[$k] ?? $default);
+        }
         $settings['numbering'] = array_filter(array_merge($settings['numbering'] ?? [], $data['numbering'] ?? []));
 
         $tenant->fill([

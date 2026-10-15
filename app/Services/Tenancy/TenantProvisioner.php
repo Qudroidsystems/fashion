@@ -144,6 +144,10 @@ class TenantProvisioner
             'allow_negative_stock' => false,                // FR-INV-004: block issues/sales beyond on-hand
             'stock_approval_threshold' => 20000,            // §9: adjustments worth more need a second person
             'po_approval_threshold' => 100000,              // POs above this need someone other than the requester
+            'deposit_percent' => 50,                         // suggested deposit on new orders
+            'discount_limit_percent' => 10,                  // FR-ORD-010: bigger discounts need "Override price"
+            'refund_approval_threshold' => 0,                // refunds above this need a second person
+            'quotation_valid_days' => 14,
             'numbering' => [
                 'customer'  => 'CUS-{SEQ:5}',
                 'order'     => 'ORD-{YYYY}-{SEQ:5}',

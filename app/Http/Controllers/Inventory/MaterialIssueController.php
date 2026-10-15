@@ -41,16 +41,21 @@ class MaterialIssueController extends Controller
 
     public function create(Request $request): View
     {
-        $customer = $request->filled('customer') ? Customer::where('public_id', $request->customer)->first() : null;
+        $order = $request->filled('order') ? \App\Models\Order::where('public_id', $request->order)->with('customer')->first() : null;
+        $customer = $order?->customer ?? ($request->filled('customer') ? Customer::where('public_id', $request->customer)->first() : null);
         $branchId = CurrentTenant::membership()?->branch_id ?? Branch::where('is_main', true)->value('id');
-        $rows = $customer
-            ? StockReservation::where('customer_id', $customer->id)->where('status', 'active')->where('branch_id', $branchId)->get()
-                ->map(fn ($r) => ['item_id' => $r->item_id, 'quantity' => $r->open_quantity])->all()
-            : [];
+        // Pre-fill with what is reserved: for the order if given, else for the customer.
+        $reserved = StockReservation::where('status', 'active')
+            ->when($order, fn ($q) => $q->where('order_id', $order->id), fn ($q) => $q->where('customer_id', $customer?->id ?? 0))->get();
+        if ($reserved->isNotEmpty()) {
+            $branchId = $reserved->first()->branch_id;
+        }
+        $rows = $reserved->where('branch_id', $branchId)->map(fn ($r) => ['item_id' => $r->item_id, 'quantity' => $r->open_quantity])->values()->all();
 
         return view('inventory.issues.form', [
             'pagetitle'   => 'Issue material',
             'customer'    => $customer,
+            'order'       => $order,
             'rows'        => $rows,
             'branchId'    => $branchId,
             'branches'    => Branch::active()->orderByDesc('is_main')->orderBy('name')->get(),
@@ -66,6 +71,7 @@ class MaterialIssueController extends Controller
         $data = $request->validate([
             'branch_id'        => ['required', Rule::exists('branches', 'id')->where('tenant_id', $tenant)],
             'customer_id'      => ['nullable', Rule::exists('customers', 'id')->where('tenant_id', $tenant)],
+            'order_id'         => ['nullable', Rule::exists('orders', 'id')->where('tenant_id', $tenant)],
             'job_reference'    => 'required|string|max:120',
             'issued_to'        => ['nullable', 'integer'],
             'notes'            => 'nullable|string|max:2000',
@@ -77,6 +83,9 @@ class MaterialIssueController extends Controller
         ]);
         if (! empty($data['issued_to']) && ! User::inCurrentTenant()->whereKey($data['issued_to'])->exists()) {
             $data['issued_to'] = null;
+        }
+        if (! empty($data['order_id'])) {
+            $data['customer_id'] = \App\Models\Order::whereKey($data['order_id'])->value('customer_id');
         }
         $issue = $this->docs->issue($data, $data['lines']);
 
