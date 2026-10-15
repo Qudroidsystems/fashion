@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogueController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\InventoryController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -86,8 +87,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/purchase-orders/{purchaseOrder}/approve', [InventoryController::class, 'approvePurchaseOrder'])->middleware('idempotent')->name('purchase-orders.approve');
             Route::post('/goods-receipts', [InventoryController::class, 'receive'])->middleware('idempotent')->name('goods-receipts.store');
 
+            // Quotes, orders, invoices and payments (SRS §8.2)
+            Route::get('/quotations', [OrderController::class, 'quotations'])->name('quotations.index');
+            Route::post('/quotations', [OrderController::class, 'storeQuotation'])->middleware('idempotent')->name('quotations.store');
+            Route::post('/quotations/{quotation}/accept', [OrderController::class, 'accept'])->middleware('idempotent')->name('quotations.accept');
+            Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+            Route::post('/orders', [OrderController::class, 'store'])->middleware('idempotent')->name('orders.store');
+            Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::patch('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+            Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+            Route::post('/orders/{order}/status-events', [OrderController::class, 'statusEvent'])->name('orders.status-events');
+            Route::post('/invoices', [OrderController::class, 'storeInvoice'])->middleware('idempotent')->name('invoices.store');
+            Route::post('/invoices/{invoice}/issue', [OrderController::class, 'issueInvoice'])->name('invoices.issue');
+            Route::post('/payments', [OrderController::class, 'storePayment'])->middleware('idempotent')->name('payments.store');
+            Route::post('/payments/{payment}/allocate', [OrderController::class, 'allocate'])->middleware('idempotent')->name('payments.allocate');
+            Route::post('/payments/{payment}/refund', [OrderController::class, 'refund'])->middleware('idempotent')->name('payments.refund');
+
             /*
-            | Further module endpoints (orders, production, …) go here.
+            | Further module endpoints (POS, production, …) go here.
             */
         });
     });

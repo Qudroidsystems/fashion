@@ -9,6 +9,9 @@
                :back="route('material-issues.index')" back-label="Material issues" />
     @include('inventory.partials.flash')
 
+    @if($order)
+        <div class="cb-banner info"><i class="ri-file-list-3-line"></i><div>For order <a href="{{ route('orders.show', $order) }}">{{ $order->number }}</a>{{ $order->title ? ' — ' . $order->title : '' }} · {{ $customer->name }}. Material reserved for this order is filled in below.</div></div>
+    @else
     <form method="GET" class="mb-3 d-flex gap-2 align-items-center flex-wrap">
         <label class="small text-muted">For customer</label>
         <select name="customer" class="form-select form-select-sm" style="max-width:320px" onchange="this.form.submit()">
@@ -17,10 +20,12 @@
         </select>
         <span class="small text-muted">Choosing a customer loads what is reserved for them and their own material.</span>
     </form>
+    @endif
 
     <form method="POST" action="{{ route('material-issues.store') }}">
         @csrf
         <input type="hidden" name="customer_id" value="{{ $customer?->id }}">
+        <input type="hidden" name="order_id" value="{{ $order?->id }}">
         <div class="row g-3">
             <div class="col-xl-9">
                 <x-cb.card title="Material" icon="ri-list-check" :flush="true">
@@ -30,7 +35,7 @@
             <div class="col-xl-3">
                 <x-cb.card title="Job" icon="ri-information-line">
                     <label class="form-label">What is it for? *</label>
-                    <input name="job_reference" class="form-control mb-3" required maxlength="120" value="{{ old('job_reference', $customer ? $customer->first_name . '’s ' : '') }}" placeholder="e.g. Wedding gown — bodice">
+                    <input name="job_reference" class="form-control mb-3" required maxlength="120" value="{{ old('job_reference', $order ? $order->number . ($order->title ? ' — ' . $order->title : '') : ($customer ? $customer->first_name . '’s ' : '')) }}" placeholder="e.g. Wedding gown — bodice">
                     <label class="form-label">From *</label>
                     <select name="branch_id" id="branch_id" class="form-select mb-3" required>
                         @foreach($branches as $b)<option value="{{ $b->id }}" @selected(old('branch_id', $branchId) == $b->id)>{{ $b->name }}</option>@endforeach

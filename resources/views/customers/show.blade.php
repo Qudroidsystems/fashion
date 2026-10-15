@@ -123,7 +123,9 @@
                 @can('View measurement')
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#measurements"><i class="ri-ruler-2-line me-1"></i>Measurements <span class="badge bg-light text-body ms-1">{{ $mCurrent->count() }}</span></a></li>
                 @endcan
-                <li class="nav-item"><a class="nav-link disabled" href="javascript:void(0)" title="Coming with the Orders module"><i class="ri-file-list-3-line me-1"></i>Orders</a></li>
+                @can('View order')
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#orders"><i class="ri-file-list-3-line me-1"></i>Orders <span class="badge bg-light text-body ms-1">{{ $oOrders->whereIn('status', \App\Support\Orders\OrderStatus::OPEN)->count() }}</span></a></li>
+                @endcan
             </ul>
 
             <div class="tab-content">
@@ -238,6 +240,10 @@
 
                 @can('View measurement')
                 @include('customers.partials.measurements')
+                @endcan
+
+                @can('View order')
+                @include('customers.partials.orders')
                 @endcan
             </div>
         </div>

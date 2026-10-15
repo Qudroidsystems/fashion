@@ -5,11 +5,9 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View order',       'icon' => 'ri-file-list-3-line',     'label' => 'Orders & Quotes'],
         ['perm' => 'Use POS',          'icon' => 'ri-shopping-cart-2-line', 'label' => 'Point of Sale'],
         ['perm' => 'View production',  'icon' => 'ri-scissors-cut-line',    'label' => 'Production'],
         ['perm' => 'View project',     'icon' => 'ri-heart-2-line',         'label' => 'Weddings & Projects'],
-        ['perm' => 'View payment',     'icon' => 'ri-bank-card-line',       'label' => 'Payments'],
         ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
     ];
     $u = auth()->user();
@@ -28,7 +26,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -89,6 +87,26 @@
                 @if($u->can('Manage style') || $u->can('Manage product'))
                 <li class="nav-item"><a href="{{ route('catalogue-categories.index') }}" class="nav-link {{ request()->routeIs('catalogue-categories.*') ? 'active' : '' }}">Categories</a></li>
                 @endif
+            </ul>
+        </div>
+    </li>
+    @endif
+
+    @if($u->can('View order') || $u->can('View payment') || $u->can('Manage quotation'))
+    @php $oActive = request()->routeIs('orders.*', 'quotations.*', 'invoices.*', 'payments.*', 'refunds.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $oActive ? 'active' : '' }}" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $oActive ? 'true' : 'false' }}" aria-controls="sidebarOrders">
+            <i class="ri-file-list-3-line"></i> <span>Orders</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $oActive ? 'show' : '' }}" id="sidebarOrders">
+            <ul class="nav nav-sm flex-column">
+                @can('View order')<li class="nav-item"><a href="{{ route('orders.index') }}" class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}">All orders</a></li>@endcan
+                @can('Manage quotation')<li class="nav-item"><a href="{{ route('quotations.index') }}" class="nav-link {{ request()->routeIs('quotations.*') ? 'active' : '' }}">Quotations</a></li>@endcan
+                @can('View payment')
+                <li class="nav-item"><a href="{{ route('invoices.index') }}" class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}">Invoices</a></li>
+                <li class="nav-item"><a href="{{ route('payments.index') }}" class="nav-link {{ request()->routeIs('payments.*', 'refunds.*') ? 'active' : '' }}">Payments</a></li>
+                @endcan
             </ul>
         </div>
     </li>

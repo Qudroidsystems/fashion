@@ -122,7 +122,21 @@ class CustomerController extends Controller
             'channels'  => CustomerConsent::CHANNELS,
             'purposes'  => CustomerConsent::PURPOSES,
             'tz'        => CurrentTenant::get()->timezone,
-        ] + $this->measurementData($customer, $user));
+        ] + $this->measurementData($customer, $user) + $this->orderData($customer, $user));
+    }
+
+    /** Orders tab: orders, open quotations and money summary (SRS §5.8). */
+    protected function orderData(Customer $customer, $user): array
+    {
+        if (! $user->can('View order')) {
+            return ['oOrders' => collect(), 'oQuotes' => collect(), 'oMoney' => null];
+        }
+
+        return [
+            'oOrders' => \App\Models\Order::where('customer_id', $customer->id)->withCount('lines')->latest('id')->limit(30)->get(),
+            'oQuotes' => $user->can('Manage quotation') ? \App\Models\Quotation::where('customer_id', $customer->id)->whereIn('status', ['draft', 'sent'])->latest('id')->get() : collect(),
+            'oMoney'  => $user->can('View payment') ? app(\App\Services\Orders\BillingService::class)->customerSummary($customer) : null,
+        ];
     }
 
     /** Measurements tab: current approved set per template, history, open links (SRS §5.4/§5.5). */

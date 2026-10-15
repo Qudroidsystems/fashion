@@ -78,7 +78,7 @@ class DashboardController extends Controller
             ['icon' => 'ri-ruler-2-line',         'name' => 'Measurements',           'phase' => 2, 'desc' => 'Versioned templates, staff capture, approval, comparison and secure request links.', 'route' => 'measurements.index'],
             ['icon' => 'ri-t-shirt-air-line',     'name' => 'Styles & Catalogue',     'phase' => 3, 'desc' => 'Style catalogue, versions and ready-made products.', 'route' => 'styles.index'],
             ['icon' => 'ri-archive-line',         'name' => 'Inventory & Purchasing', 'phase' => 3, 'desc' => 'Fabric and accessories, suppliers, purchase orders and the stock ledger.', 'route' => 'inventory.index'],
-            ['icon' => 'ri-file-list-3-line',     'name' => 'Orders & Quotes',        'phase' => 4, 'desc' => 'Quotations, garment lines, invoices, deposits and balances.'],
+            ['icon' => 'ri-file-list-3-line',     'name' => 'Orders & Quotes',        'phase' => 4, 'desc' => 'Quotations, garment lines, invoices, deposits and balances.', 'route' => 'orders.index'],
             ['icon' => 'ri-shopping-cart-2-line', 'name' => 'POS & Payments',         'phase' => 4, 'desc' => 'Ready-made sales, cashier shifts, receipts and refunds.'],
             ['icon' => 'ri-scissors-cut-line',    'name' => 'Production',             'phase' => 5, 'desc' => 'Task board, fittings, quality checks, alterations and delivery.'],
             ['icon' => 'ri-heart-2-line',         'name' => 'Weddings & Bulk Projects','phase' => 5, 'desc' => 'Participants, per-garment tracking, milestones and client progress pages.'],

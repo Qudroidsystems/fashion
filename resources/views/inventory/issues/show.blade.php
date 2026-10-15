@@ -12,6 +12,7 @@
             <span class="cb-meta-pill">{{ $issue->issued_at->timezone($tz)->format('d M Y, H:i') }}</span>
             <span class="cb-meta-pill">From {{ $issue->branch->name }}</span>
             @if($issue->customer)<a href="{{ route('customers.show', $issue->customer) }}" class="cb-meta-pill text-white"><i class="ri-user-line me-1"></i>{{ $issue->customer->name }}</a>@endif
+            @if($issue->order_id && ($o = \App\Models\Order::find($issue->order_id)))<a href="{{ route('orders.show', $o) }}" class="cb-meta-pill text-white"><i class="ri-file-list-3-line me-1"></i>{{ $o->number }}</a>@endif
             @if($issue->issuedTo)<span class="cb-meta-pill">Given to {{ $issue->issuedTo->name }}</span>@endif
             @if($canCost)<span class="cb-meta-pill">Material cost {{ Money::format($issue->total_cost) }}</span>@endif
         </x-slot:pills>

@@ -52,6 +52,25 @@ class SearchController extends Controller
                 ]));
         }
 
+        if ($user->can('View order')) {
+            \App\Models\Order::where(fn ($w) => $w->where('number', 'like', $like)->orWhere('title', 'like', $like))->with('customer:id,first_name,last_name')
+                ->latest('id')->limit(6)->get()
+                ->each(fn ($o) => $results->push([
+                    'title' => $o->number . ($o->title ? ' · ' . $o->title : ''), 'url' => route('orders.show', $o), 'icon' => 'mdi-clipboard-text',
+                    'category' => 'Orders', 'subtitle' => $o->customer?->name . ' · ' . $o->status_label,
+                ]));
+        }
+        if ($user->can('Manage quotation')) {
+            \App\Models\Quotation::where('number', 'like', $like)->limit(4)->get(['id', 'public_id', 'number', 'title'])
+                ->each(fn ($q) => $results->push(['title' => $q->number, 'url' => route('quotations.show', $q), 'icon' => 'mdi-file-document-edit', 'category' => 'Quotations', 'subtitle' => $q->title]));
+        }
+        if ($user->can('View payment')) {
+            \App\Models\Invoice::where('number', 'like', $like)->limit(4)->get(['id', 'public_id', 'number', 'total'])
+                ->each(fn ($i) => $results->push(['title' => $i->number, 'url' => route('invoices.show', $i), 'icon' => 'mdi-receipt', 'category' => 'Invoices', 'subtitle' => \App\Support\Money::format($i->total)]));
+            \App\Models\Payment::where(fn ($w) => $w->where('number', 'like', $like)->orWhere('reference', 'like', $like))->limit(4)->get(['id', 'public_id', 'number', 'amount', 'reference'])
+                ->each(fn ($p) => $results->push(['title' => $p->number, 'url' => route('payments.show', $p), 'icon' => 'mdi-cash', 'category' => 'Payments', 'subtitle' => \App\Support\Money::format($p->amount) . ($p->reference ? ' · ' . $p->reference : '')]));
+        }
+
         if ($user->can('View inventory')) {
             \App\Models\InventoryItem::active()->search($q)->limit(6)->get(['id', 'public_id', 'name', 'code', 'unit'])
                 ->each(fn ($i) => $results->push([
