@@ -38,7 +38,7 @@
         </div>
     </div>
     @yield('body')
-    <div class="foot">Your measurements are only shared with {{ $house?->name ?? 'the fashion house' }}.</div>
+    <div class="foot">@hasSection('foot')@yield('foot')@else Your measurements are only shared with {{ $house?->name ?? 'the fashion house' }}.@endif</div>
 </div>
 </body>
 </html>

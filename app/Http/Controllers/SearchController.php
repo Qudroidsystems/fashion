@@ -52,6 +52,13 @@ class SearchController extends Controller
                 ]));
         }
 
+        if ($user->can('View project')) {
+            \App\Models\Project::visibleTo($user)->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('number', 'like', $like))
+                ->with('customer:id,first_name,last_name')->latest('id')->limit(5)->get()
+                ->each(fn ($p) => $results->push(['title' => $p->name, 'url' => route('projects.show', $p), 'icon' => 'mdi-heart', 'category' => 'Projects',
+                    'subtitle' => $p->number . ' · ' . $p->customer?->name . ($p->event_date ? ' · ' . $p->event_date->format('d M Y') : '')]));
+        }
+
         if ($user->can('View order')) {
             \App\Models\Order::where(fn ($w) => $w->where('number', 'like', $like)->orWhere('title', 'like', $like))->with('customer:id,first_name,last_name')
                 ->latest('id')->limit(6)->get()

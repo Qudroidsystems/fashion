@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View project',     'icon' => 'ri-heart-2-line',         'label' => 'Weddings & Projects'],
         ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
     ];
     $u = auth()->user();
@@ -24,7 +23,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -109,6 +108,14 @@
         </div>
     </li>
     @endif
+
+    @can('View project')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">
+            <i class="ri-heart-2-line"></i> <span>Weddings & Projects</span>
+        </a>
+    </li>
+    @endcan
 
     @can('View production')
     @php $prActive = request()->routeIs('production.*', 'fittings.*', 'deliveries.*'); @endphp

@@ -287,7 +287,7 @@ class OrderService
     {
         $order = $line->order;
         if (isset($data['measurement_session_id']) && $data['measurement_session_id']) {
-            $this->assertSessions([['measurement_session_id' => $data['measurement_session_id']]], $order->customer_id);
+            $this->assertSessions([['measurement_session_id' => $data['measurement_session_id'], 'participant_id' => $line->participant_id]], $order->customer_id);
         }
         $before = $line->only(array_keys($data));
         $line->update($data);
@@ -355,15 +355,24 @@ class OrderService
     }
 
     /** A garment can only use approved measurements of this order's customer (§6.1 step 7). */
+    /**
+     * Only approved measurements of the person wearing it: the order's customer,
+     * or — on a project order — the participant the garment is for.
+     */
     protected function assertSessions(array $rows, int $customerId): void
     {
-        $ids = collect($rows)->pluck('measurement_session_id')->filter()->unique();
-        if ($ids->isEmpty()) {
+        $rows = collect($rows)->filter(fn ($r) => ! empty($r['measurement_session_id']));
+        if ($rows->isEmpty()) {
             return;
         }
-        $ok = MeasurementSession::whereIn('id', $ids)->where('customer_id', $customerId)->whereIn('status', ['approved', 'superseded'])->count();
-        if ($ok !== $ids->count()) {
-            throw ValidationException::withMessages(['lines' => 'Link only approved measurements of this customer.']);
+        $wearers = \App\Models\ProjectParticipant::whereIn('id', $rows->pluck('participant_id')->filter())->pluck('customer_id', 'id');
+        foreach ($rows as $r) {
+            $allowed = array_filter([$customerId, $wearers[$r['participant_id'] ?? 0] ?? null]);
+            $ok = MeasurementSession::whereKey($r['measurement_session_id'])->whereIn('customer_id', $allowed)
+                ->whereIn('status', ['approved', 'superseded'])->exists();
+            if (! $ok) {
+                throw ValidationException::withMessages(['lines' => 'Link only approved measurements of the person wearing the garment.']);
+            }
         }
     }
 }

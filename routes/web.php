@@ -21,7 +21,12 @@ use Illuminate\Support\Facades\Session;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', fn () => Auth::check() ? redirect()->route('dashboard') : redirect()->route('login'))->name('home');
+// Public landing page; signed-in users go straight to their dashboard.
+Route::get('/', fn () => Auth::check() ? redirect()->route('dashboard') : view('landing', [
+    'siteName'   => config('landing.brand'),
+    'mobile'     => config('landing.app'),
+    'canSignUp'  => config('tenancy.mode') !== 'single' && config('tenancy.self_signup') && \Illuminate\Support\Facades\Route::has('register'),
+]))->name('home');
 
 Auth::routes(['verify' => true]);
 
@@ -46,6 +51,10 @@ Route::post('/m/{token}', [\App\Http\Controllers\Measurements\PublicMeasurementC
 */
 
 // Online payments (SRS FR-ORD-008, FR-ADM-004): provider webhook per house and the customer's return page.
+// Client project tracking page (no login; random revocable token — SRS FR-PRJ-006, scenario 39)
+Route::get('/t/{token}', [\App\Http\Controllers\Projects\TrackingController::class, 'show'])
+    ->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1')->name('projects.track');
+
 Route::post('/webhooks/paystack/{tenant}', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'webhook'])
     ->where('tenant', '[0-9A-Za-z]{26}')->middleware('throttle:120,1')->name('webhooks.paystack');
 Route::get('/pay/return', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'return'])->middleware('throttle:30,1')->name('pay.return');
@@ -108,4 +117,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/orders.php';
     require __DIR__ . '/modules/pos.php';
     require __DIR__ . '/modules/production.php';
+    require __DIR__ . '/modules/projects.php';
 });

@@ -220,6 +220,10 @@ class StockDocumentService
     {
         $lines = $this->lines($lines, keepExtra: true);
         $branchId = (int) $data['branch_id'];
+        // Material for a project's order is that project's cost too (scenario 38, FR-PRJ-007).
+        if (empty($data['project_id']) && ! empty($data['order_id'])) {
+            $data['project_id'] = \App\Models\Order::whereKey($data['order_id'])->value('project_id');
+        }
 
         return DB::transaction(function () use ($data, $lines, $branchId) {
             $issue = MaterialIssue::create([
