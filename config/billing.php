@@ -44,6 +44,8 @@ return [
         'measurement_links' => ['measurement-requests.*', 'api.v1.measurement-requests.*'],
         'online_payments'   => ['orders.payment-link', 'invoices.payment-link', 'payment-intents.*'],
         'export'            => ['customers.export'],
+        'website'           => ['website.edit', 'website.update', 'site-enquiries.*'],
+        'custom_domain'     => ['website.domain-check'],
     ],
     'block_reads' => ['export'],
 ];
