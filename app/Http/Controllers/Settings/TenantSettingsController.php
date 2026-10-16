@@ -58,6 +58,11 @@ class TenantSettingsController extends Controller
             'discount_limit_percent'   => 'nullable|numeric|min:0|max:100',
             'refund_approval_threshold'=> 'nullable|numeric|min:0|max:1000000000',
             'quotation_valid_days'     => 'nullable|integer|min:1|max:365',
+            'production_working_days'  => 'nullable|array',
+            'production_working_days.*'=> 'integer|between:1,7',
+            'fitting_reminder_hours'   => ['nullable', 'string', 'max:60', 'regex:/^\s*\d{1,3}(\s*,\s*\d{1,3})*\s*$/'],
+            'production_task_limit'    => 'nullable|integer|min:0|max:200',
+            'release_with_balance'     => 'nullable|boolean',
             'paystack_enabled'         => 'nullable|boolean',
             'paystack_public_key'      => ['nullable', 'string', 'max:120', 'regex:/^pk_(test|live)_[A-Za-z0-9]+$/'],
             'paystack_secret_key'      => ['nullable', 'string', 'max:120', 'regex:/^sk_(test|live)_[A-Za-z0-9]+$/'],
@@ -65,6 +70,7 @@ class TenantSettingsController extends Controller
             'numbering.*'              => ['nullable', 'string', 'max:40', 'regex:/\{SEQ(:\d)?\}/'],
         ], [
             'numbering.*.regex' => 'Each number format must contain {SEQ} (for example ORD-{YYYY}-{SEQ:5}).',
+            'fitting_reminder_hours.regex' => 'Enter hours as numbers separated by commas, for example 24, 2.',
             'paystack_public_key.regex' => 'That does not look like a Paystack public key (pk_test_… or pk_live_…).',
             'paystack_secret_key.regex' => 'That does not look like a Paystack secret key (sk_test_… or sk_live_…).',
         ]);
@@ -106,6 +112,17 @@ class TenantSettingsController extends Controller
         foreach (['deposit_percent' => 50, 'discount_limit_percent' => 10, 'refund_approval_threshold' => 0, 'quotation_valid_days' => 14] as $k => $default) {
             $settings[$k] = isset($data[$k]) ? (float) $data[$k] : ($settings[$k] ?? $default);
         }
+        // Production (SRS §5.9)
+        $days = array_values(array_unique(array_map('intval', $data['production_working_days'] ?? [])));
+        sort($days);
+        $settings['production_working_days'] = $days ?: [1, 2, 3, 4, 5, 6];
+        if (isset($data['fitting_reminder_hours'])) {
+            $hours = array_values(array_unique(array_filter(array_map('intval', explode(',', $data['fitting_reminder_hours'])), fn ($h) => $h > 0 && $h <= 336)));
+            rsort($hours);
+            $settings['fitting_reminder_hours'] = $hours;
+        }
+        $settings['production_task_limit'] = isset($data['production_task_limit']) ? (int) $data['production_task_limit'] : ($settings['production_task_limit'] ?? 12);
+        $settings['release_with_balance'] = (bool) ($data['release_with_balance'] ?? false);
         $settings['numbering'] = array_filter(array_merge($settings['numbering'] ?? [], $data['numbering'] ?? []));
 
         $tenant->fill([

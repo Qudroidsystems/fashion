@@ -71,6 +71,13 @@ class SearchController extends Controller
                 ->each(fn ($p) => $results->push(['title' => $p->number, 'url' => route('payments.show', $p), 'icon' => 'mdi-cash', 'category' => 'Payments', 'subtitle' => \App\Support\Money::format($p->amount) . ($p->reference ? ' · ' . $p->reference : '')]));
         }
 
+        if ($user->can('View production')) {
+            \App\Models\ProductionTask::where('number', 'like', $like)->with('order:id,number')->latest('id')->limit(4)->get()
+                ->each(fn ($t) => $results->push(['title' => $t->number . ' · ' . $t->name, 'url' => route('production.tasks.show', $t), 'icon' => 'mdi-view-column', 'category' => 'Production', 'subtitle' => $t->order?->number . ' · ' . $t->status_label]));
+            \App\Models\Fitting::where('number', 'like', $like)->with('customer:id,first_name,last_name')->latest('id')->limit(4)->get()
+                ->each(fn ($f) => $results->push(['title' => $f->number, 'url' => route('fittings.show', $f), 'icon' => 'mdi-human-handsup', 'category' => 'Fittings', 'subtitle' => $f->customer?->name]));
+        }
+
         if ($user->can('Use POS')) {
             \App\Models\Sale::where('number', 'like', $like)->latest('id')->limit(4)->get(['id', 'public_id', 'number', 'total', 'status'])
                 ->each(fn ($s) => $results->push(['title' => $s->number, 'url' => route('pos.sales.show', $s), 'icon' => 'mdi-cash-register', 'category' => 'POS sales', 'subtitle' => \App\Support\Money::format($s->total) . ($s->status === 'voided' ? ' · voided' : '')]));

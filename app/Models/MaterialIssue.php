@@ -14,7 +14,7 @@ class MaterialIssue extends Model
     use BelongsToTenant, HasPublicId;
 
     protected $fillable = [
-        'tenant_id', 'number', 'branch_id', 'customer_id', 'order_id', 'project_id', 'job_reference',
+        'tenant_id', 'number', 'branch_id', 'customer_id', 'order_id', 'order_line_id', 'task_id', 'project_id', 'job_reference',
         'issued_to', 'issued_by', 'issued_at', 'total_cost', 'notes',
     ];
 

@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\HasPricedLines;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** One garment / item on an order (SRS FR-ORD-002). */
 class OrderLine extends Model
@@ -32,6 +33,12 @@ class OrderLine extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /** Production tasks for this garment, in workflow order (stages first, then alterations/rework by time). */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProductionTask::class)->orderBy('position')->orderBy('id');
     }
 
     public function getStatusLabelAttribute(): string

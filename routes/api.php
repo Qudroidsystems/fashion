@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PosController;
+use App\Http\Controllers\Api\V1\ProductionController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -111,8 +112,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/pos/sales', [PosController::class, 'storeSale'])->name('pos.sales.store');
             Route::get('/pos/sales/{sale}', [PosController::class, 'showSale'])->name('pos.sales.show');
 
+            // Production (SRS §8.2)
+            Route::get('/production/tasks', [ProductionController::class, 'tasks'])->name('production.tasks.index');
+            Route::get('/production/tasks/{task}', [ProductionController::class, 'task'])->name('production.tasks.show');
+            Route::post('/production/tasks/{task}/events', [ProductionController::class, 'event'])->middleware('idempotent')->name('production.tasks.events');
+            Route::post('/fittings', [ProductionController::class, 'storeFitting'])->middleware('idempotent')->name('fittings.store');
+            Route::post('/fittings/{fitting}/record', [ProductionController::class, 'recordFitting'])->middleware('idempotent')->name('fittings.record');
+            Route::post('/quality-checks', [ProductionController::class, 'storeQualityCheck'])->middleware('idempotent')->name('quality-checks.store');
+            Route::post('/alteration-tasks', [ProductionController::class, 'storeAlteration'])->middleware('idempotent')->name('alteration-tasks.store');
+            Route::post('/deliveries', [ProductionController::class, 'storeDelivery'])->middleware('idempotent')->name('deliveries.store');
+
             /*
-            | Further module endpoints (production, …) go here.
+            | Further module endpoints (projects, …) go here.
             */
         });
     });

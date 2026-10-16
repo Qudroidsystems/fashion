@@ -113,8 +113,32 @@ class OrderController extends Controller
             'items'     => InventoryItem::active()->where(fn ($q) => $q->where('type', '!=', 'customer_material')->orWhere('customer_id', $order->customer_id))->orderBy('name')->get(['id', 'name', 'code', 'unit', 'colour']),
             'branches'  => Branch::active()->orderByDesc('is_main')->orderBy('name')->get(),
             'next'      => OrderStatus::TRANSITIONS[$order->status] ?? [],
+            'production'=> $this->productionData($order),
             'tz'        => $tenantTz,
         ]);
+    }
+
+    /** Production, fittings and handover for the order page (SRS §5.9). */
+    protected function productionData(Order $order): ?array
+    {
+        $u = auth()->user();
+        if (! ($u->can('View production') || $u->can('Manage fitting') || $u->can('Manage delivery')) || $order->status === 'draft') {
+            return null;
+        }
+        $svc = app(\App\Services\Production\ProductionService::class);
+        $tasks = \App\Models\ProductionTask::where('order_id', $order->id)->with('assignee:id,name')->orderBy('position')->orderBy('id')->get();
+        $unplanned = $order->lines->whereIn('status', ['pending', 'in_production'])
+            ->filter(fn ($l) => $tasks->where('order_line_id', $l->id)->where('kind', 'stage')->isEmpty());
+
+        return [
+            'tasks'      => $tasks->groupBy(fn ($t) => $t->order_line_id ?? 0),
+            'unplanned'  => $unplanned->map(fn ($l) => ['line' => $l, 'suggested' => $svc->workflowFor($l)?->id]),
+            'workflows'  => \App\Models\ProductionWorkflow::active()->orderBy('name')->get(['id', 'name', 'line_kinds']),
+            'fittings'   => \App\Models\Fitting::where('order_id', $order->id)->whereNot('status', 'rescheduled')->with('staff:id,name', 'line:id,description')->orderByDesc('scheduled_at')->get(),
+            'deliveries' => \App\Models\Delivery::where('order_id', $order->id)->latest('handed_over_at')->get(),
+            'readyLines' => $order->lines->where('status', 'ready'),
+            'releaseWithBalance' => (bool) \App\Support\Tenancy\CurrentTenant::get()->setting('release_with_balance', false),
+        ];
     }
 
     public function edit(Order $order): View

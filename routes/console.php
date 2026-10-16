@@ -30,6 +30,17 @@ Artisan::command('fhmp:measurement-kit {tenant? : slug; all houses when omitted}
     });
 })->purpose('Install the starter measurement parameters and templates');
 
+Artisan::command('fhmp:production-kit {tenant? : slug; all houses when omitted}', function (\App\Services\Production\ProductionStarterKit $kit) {
+    $q = \App\Models\Tenant::query();
+    if ($slug = $this->argument('tenant')) {
+        $q->where('slug', $slug);
+    }
+    $q->each(function ($tenant) use ($kit) {
+        $kit->install($tenant);
+        $this->line("  production workflows ready for {$tenant->name}");
+    });
+})->purpose('Install the starter production workflows and quality checklist (skips houses that already have workflows)');
+
 /*
 | FR-MEA-011: remind staff to re-measure customers whose last approved
 | measurements are older than the house's review interval. One follow-up
@@ -115,6 +126,41 @@ Artisan::command('fhmp:verify-payments', function () {
 })->purpose('Verify pending online payments with the provider');
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:verify-payments')->everyFifteenMinutes();
+
+/* Add the starter production workflows and checklist to houses that have none. */
+Artisan::command('fhmp:production-kit {tenant? : slug; all houses when omitted}', function (\App\Services\Production\ProductionStarterKit $kit) {
+    \App\Models\Tenant::query()->when($this->argument('tenant'), fn ($q, $slug) => $q->where('slug', $slug))
+        ->each(function ($tenant) use ($kit) {
+            $kit->install($tenant);
+            $this->line("  production workflows ready for {$tenant->name}");
+        });
+})->purpose('Install the starter production workflows and quality checklist');
+
+/* FR-PRD-005 / §10: send fitting reminders that are due (cancelled or moved fittings are skipped). */
+Artisan::command('fhmp:fitting-reminders', function () {
+    $n = 0;
+    \App\Models\Tenant::whereIn('status', config('tenancy.usable_statuses'))->each(function ($tenant) use (&$n) {
+        \App\Support\Tenancy\CurrentTenant::run($tenant, function () use (&$n) {
+            $n += app(\App\Services\Production\FittingService::class)->sendDue();
+        });
+    });
+    $this->info("{$n} fitting reminder(s) sent.");
+})->purpose('Send due fitting reminders');
+
+\Illuminate\Support\Facades\Schedule::command('fhmp:fitting-reminders')->everyFiveMinutes()->withoutOverlapping();
+
+/* FR-PRD-009: re-assess late-delivery risk for open orders; people hear only when it rises. */
+Artisan::command('fhmp:delivery-risk', function () {
+    $n = 0;
+    \App\Models\Tenant::whereIn('status', config('tenancy.usable_statuses'))->each(function ($tenant) use (&$n) {
+        \App\Support\Tenancy\CurrentTenant::run($tenant, function () use (&$n) {
+            $n += app(\App\Services\Production\RiskService::class)->refreshAll();
+        });
+    });
+    $this->info("{$n} open order(s) assessed.");
+})->purpose('Flag orders at risk of late delivery');
+
+\Illuminate\Support\Facades\Schedule::command('fhmp:delivery-risk')->dailyAt('07:15');
 
 /*
 | Scheduled jobs (birthdays, measurement reviews, fittings, overdue payments…)

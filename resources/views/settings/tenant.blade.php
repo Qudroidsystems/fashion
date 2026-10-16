@@ -118,6 +118,29 @@
                     </div>
                 </x-cb.card>
 
+                @php $wd = array_map('intval', (array) $tenant->setting('production_working_days', [1, 2, 3, 4, 5, 6])); @endphp
+                <x-cb.card title="Production" icon="ri-scissors-cut-line" class="mt-3">
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">Working days</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach([1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun'] as $d => $l)
+                                    <label class="d-flex gap-1"><input type="checkbox" name="production_working_days[]" value="{{ $d }}" @checked(in_array($d, (array) old('production_working_days', $wd)))> {{ $l }}</label>
+                                @endforeach
+                            </div>
+                            <div class="form-text">Used to work out stage due dates from the promise date and to judge late-delivery risk.</div></div>
+                        <div class="col-md-6"><label class="form-label">Fitting reminders</label>
+                            <input name="fitting_reminder_hours" class="form-control" value="{{ old('fitting_reminder_hours', implode(', ', (array) $tenant->setting('fitting_reminder_hours', [24, 2]))) }}" placeholder="24, 2">
+                            <div class="form-text">Hours before a fitting to remind the staff member and the customer, separated by commas.</div></div>
+                        <div class="col-md-6"><label class="form-label">Open tasks per person</label>
+                            <input type="number" min="0" max="200" name="production_task_limit" class="form-control" value="{{ old('production_task_limit', $tenant->setting('production_task_limit', 12)) }}">
+                            <div class="form-text">Above this, orders that depend on that person are flagged as at risk (0 = don't check).</div></div>
+                        <div class="col-12">
+                            <label class="d-flex gap-2"><input type="hidden" name="release_with_balance" value="0"><input type="checkbox" name="release_with_balance" value="1" @checked(old('release_with_balance', $tenant->setting('release_with_balance', false)))> Allow handing over garments while money is still owed</label>
+                            <div class="form-text">When on, staff must write down how and when the balance will be paid; it is kept on the delivery record.</div>
+                        </div>
+                    </div>
+                </x-cb.card>
+
                 @php $ps = $tenant->setting('paystack', []); @endphp
                 <x-cb.card title="Online payments (Paystack)" icon="ri-secure-payment-line" class="mt-3" id="paystack">
                     <p class="small text-muted">Customers can pay deposits and balances by card or bank transfer through a link you send them. Payments are confirmed only after Paystack verifies them. Get your keys from your Paystack dashboard → Settings → API keys &amp; webhooks.</p>

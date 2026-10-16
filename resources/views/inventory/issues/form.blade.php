@@ -26,6 +26,7 @@
         @csrf
         <input type="hidden" name="customer_id" value="{{ $customer?->id }}">
         <input type="hidden" name="order_id" value="{{ $order?->id }}">
+        <input type="hidden" name="task_id" value="{{ $task?->id }}">
         <div class="row g-3">
             <div class="col-xl-9">
                 <x-cb.card title="Material" icon="ri-list-check" :flush="true">
@@ -35,14 +36,14 @@
             <div class="col-xl-3">
                 <x-cb.card title="Job" icon="ri-information-line">
                     <label class="form-label">What is it for? *</label>
-                    <input name="job_reference" class="form-control mb-3" required maxlength="120" value="{{ old('job_reference', $order ? $order->number . ($order->title ? ' — ' . $order->title : '') : ($customer ? $customer->first_name . '’s ' : '')) }}" placeholder="e.g. Wedding gown — bodice">
+                    <input name="job_reference" class="form-control mb-3" required maxlength="120" value="{{ old('job_reference', $task ? $order->number . ' — ' . ($task->line?->description ?? $order->title) . ' (' . $task->name . ')' : ($order ? $order->number . ($order->title ? ' — ' . $order->title : '') : ($customer ? $customer->first_name . '’s ' : ''))) }}" placeholder="e.g. Wedding gown — bodice">
                     <label class="form-label">From *</label>
                     <select name="branch_id" id="branch_id" class="form-select mb-3" required>
                         @foreach($branches as $b)<option value="{{ $b->id }}" @selected(old('branch_id', $branchId) == $b->id)>{{ $b->name }}</option>@endforeach
                     </select>
                     <label class="form-label">Given to</label>
                     <select name="issued_to" class="form-select mb-3"><option value="">—</option>
-                        @foreach($staff as $s)<option value="{{ $s->id }}" @selected(old('issued_to') == $s->id)>{{ $s->name }}</option>@endforeach
+                        @foreach($staff as $s)<option value="{{ $s->id }}" @selected(old('issued_to', $task?->assigned_to) == $s->id)>{{ $s->name }}</option>@endforeach
                     </select>
                     <label class="form-label">Notes</label>
                     <textarea name="notes" class="form-control mb-3" rows="2" maxlength="2000">{{ old('notes') }}</textarea>
