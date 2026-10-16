@@ -107,4 +107,5 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/inventory.php';
     require __DIR__ . '/modules/orders.php';
     require __DIR__ . '/modules/pos.php';
+    require __DIR__ . '/modules/production.php';
 });

@@ -41,7 +41,9 @@ class MaterialIssueController extends Controller
 
     public function create(Request $request): View
     {
-        $order = $request->filled('order') ? \App\Models\Order::where('public_id', $request->order)->with('customer')->first() : null;
+        // From a production task (FR-PRD-004): the issue is tied to that garment and stage.
+        $task = $request->filled('task') ? \App\Models\ProductionTask::where('public_id', $request->task)->with('order.customer', 'line')->first() : null;
+        $order = $task?->order ?? ($request->filled('order') ? \App\Models\Order::where('public_id', $request->order)->with('customer')->first() : null);
         $customer = $order?->customer ?? ($request->filled('customer') ? Customer::where('public_id', $request->customer)->first() : null);
         $branchId = CurrentTenant::membership()?->branch_id ?? Branch::where('is_main', true)->value('id');
         // Pre-fill with what is reserved: for the order if given, else for the customer.
@@ -56,6 +58,7 @@ class MaterialIssueController extends Controller
             'pagetitle'   => 'Issue material',
             'customer'    => $customer,
             'order'       => $order,
+            'task'        => $task,
             'rows'        => $rows,
             'branchId'    => $branchId,
             'branches'    => Branch::active()->orderByDesc('is_main')->orderBy('name')->get(),
@@ -72,6 +75,7 @@ class MaterialIssueController extends Controller
             'branch_id'        => ['required', Rule::exists('branches', 'id')->where('tenant_id', $tenant)],
             'customer_id'      => ['nullable', Rule::exists('customers', 'id')->where('tenant_id', $tenant)],
             'order_id'         => ['nullable', Rule::exists('orders', 'id')->where('tenant_id', $tenant)],
+            'task_id'          => ['nullable', Rule::exists('production_tasks', 'id')->where('tenant_id', $tenant)],
             'job_reference'    => 'required|string|max:120',
             'issued_to'        => ['nullable', 'integer'],
             'notes'            => 'nullable|string|max:2000',
@@ -84,10 +88,20 @@ class MaterialIssueController extends Controller
         if (! empty($data['issued_to']) && ! User::inCurrentTenant()->whereKey($data['issued_to'])->exists()) {
             $data['issued_to'] = null;
         }
+        if (! empty($data['task_id'])) {
+            $task = \App\Models\ProductionTask::find($data['task_id']);
+            $data['order_id'] = $task->order_id;
+            $data['order_line_id'] = $task->order_line_id;
+        }
         if (! empty($data['order_id'])) {
             $data['customer_id'] = \App\Models\Order::whereKey($data['order_id'])->value('customer_id');
         }
         $issue = $this->docs->issue($data, $data['lines']);
+        if (! empty($task)) {
+            app(\App\Services\Production\ProductionService::class)->note($task, "Material issued: {$issue->number}");
+
+            return redirect()->route('production.tasks.show', $task)->with('success', "Material issued ({$issue->number}).");
+        }
 
         return redirect()->route('material-issues.show', $issue)->with('success', 'Material issued to production.');
     }

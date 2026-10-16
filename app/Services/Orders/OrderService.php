@@ -212,6 +212,9 @@ class OrderService
         if ($to === 'confirmed' && ! $order->lines()->where('status', '!=', 'cancelled')->exists()) {
             throw ValidationException::withMessages(['status' => 'Add at least one garment before confirming.']);
         }
+        if ($to === 'ready' && ($open = \App\Models\ProductionTask::where('order_id', $order->id)->open()->count())) {
+            throw ValidationException::withMessages(['status' => "{$open} production task(s) are still open. Finish them on the production board first."]);
+        }
 
         return DB::transaction(function () use ($order, $from, $to, $note, $customerVisible) {
             $changes = ['status' => $to];
@@ -250,6 +253,7 @@ class OrderService
         return DB::transaction(function () use ($order, $reason) {
             $from = $order->status;
             StockReservation::where('order_id', $order->id)->where('status', 'active')->get()->each(fn ($r) => $this->ledger->release($r));
+            app(\App\Services\Production\ProductionService::class)->cancelOpenWork($order, $reason);
             $order->lines()->where('status', '!=', 'delivered')->update(['status' => 'cancelled']);
             $order->update(['status' => 'cancelled', 'cancelled_at' => now(), 'cancel_reason' => $reason]);
             $this->event($order, $from, 'cancelled', $reason, true);

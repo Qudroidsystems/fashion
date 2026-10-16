@@ -5,7 +5,6 @@
 --}}
 @php
     $soon = [
-        ['perm' => 'View production',  'icon' => 'ri-scissors-cut-line',    'label' => 'Production'],
         ['perm' => 'View project',     'icon' => 'ri-heart-2-line',         'label' => 'Weddings & Projects'],
         ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
     ];
@@ -25,7 +24,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -110,6 +109,26 @@
         </div>
     </li>
     @endif
+
+    @can('View production')
+    @php $prActive = request()->routeIs('production.*', 'fittings.*', 'deliveries.*'); @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $prActive ? 'active' : '' }}" href="#sidebarProduction" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $prActive ? 'true' : 'false' }}" aria-controls="sidebarProduction">
+            <i class="ri-scissors-cut-line"></i> <span>Production</span>
+        </a>
+        <div class="collapse menu-dropdown {{ $prActive ? 'show' : '' }}" id="sidebarProduction">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item"><a href="{{ route('production.board') }}" class="nav-link {{ request()->routeIs('production.board', 'production.tasks.*') ? 'active' : '' }}">Board</a></li>
+                <li class="nav-item"><a href="{{ route('production.board', ['who' => 'mine']) }}" class="nav-link">My work</a></li>
+                <li class="nav-item"><a href="{{ route('fittings.index') }}" class="nav-link {{ request()->routeIs('fittings.*') ? 'active' : '' }}">Fittings</a></li>
+                @can('Manage production workflow')
+                <li class="nav-item"><a href="{{ route('production.setup') }}" class="nav-link {{ request()->routeIs('production.setup', 'production.workflows.*') ? 'active' : '' }}">Workflows & checks</a></li>
+                @endcan
+            </ul>
+        </div>
+    </li>
+    @endcan
 
     @can('Use POS')
     @php $pActive = request()->routeIs('pos.*'); @endphp

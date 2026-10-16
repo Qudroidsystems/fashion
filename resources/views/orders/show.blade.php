@@ -108,6 +108,10 @@
                 @endif
             </x-cb.card>
 
+            @if($production)
+                @include('orders.partials.production')
+            @endif
+
             {{-- Materials --}}
             @can('View inventory')
             <x-cb.card title="Materials" icon="ri-archive-line" class="mt-3" :flush="true">

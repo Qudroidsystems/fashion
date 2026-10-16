@@ -225,6 +225,7 @@ class StockDocumentService
             $issue = MaterialIssue::create([
                 'number' => DocumentNumber::next('material_issue'), 'branch_id' => $branchId,
                 'customer_id' => $data['customer_id'] ?? null, 'order_id' => $data['order_id'] ?? null,
+                'order_line_id' => $data['order_line_id'] ?? null, 'task_id' => $data['task_id'] ?? null,
                 'project_id' => $data['project_id'] ?? null, 'job_reference' => $data['job_reference'],
                 'issued_to' => $data['issued_to'] ?? null, 'issued_by' => auth()->id(),
                 'issued_at' => now(), 'notes' => $data['notes'] ?? null,

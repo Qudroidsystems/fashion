@@ -19,7 +19,7 @@ class Order extends Model
 
     protected $fillable = [
         'tenant_id', 'number', 'customer_id', 'branch_id', 'quotation_id', 'status', 'title', 'event_date', 'promised_date',
-        'priority', 'subtotal', 'discount_total', 'order_discount', 'total', 'deposit_required', 'customer_notes',
+        'priority', 'risk_level', 'risk_reasons', 'risk_assessed_at', 'risk_notified_level', 'subtotal', 'discount_total', 'order_discount', 'total', 'deposit_required', 'customer_notes',
         'internal_notes', 'owner_id', 'revision', 'confirmed_at', 'delivered_at', 'cancelled_at', 'cancel_reason', 'created_by',
     ];
 
@@ -27,6 +27,7 @@ class Order extends Model
         'event_date' => 'date', 'promised_date' => 'date', 'confirmed_at' => 'datetime', 'delivered_at' => 'datetime',
         'cancelled_at' => 'datetime', 'subtotal' => 'float', 'discount_total' => 'float', 'order_discount' => 'float',
         'total' => 'float', 'deposit_required' => 'float', 'revision' => 'integer',
+        'risk_reasons' => 'array', 'risk_assessed_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo
@@ -90,6 +91,21 @@ class Order extends Model
     }
 
     /** What the customer is charged: nothing for drafts or cancelled orders. */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProductionTask::class);
+    }
+
+    public function fittings(): HasMany
+    {
+        return $this->hasMany(Fitting::class)->orderBy('scheduled_at');
+    }
+
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(Delivery::class)->latest('handed_over_at');
+    }
+
     public function chargeable(): float
     {
         return in_array($this->status, ['draft', 'cancelled'], true) ? 0.0 : $this->total;

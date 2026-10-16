@@ -54,6 +54,7 @@ class TenantProvisioner
                 $this->syncDefaultRoles($tenant);
                 app(\App\Services\Measurements\MeasurementStarterKit::class)->install($tenant);
                 \App\Services\Catalogue\CatalogueStarter::install($tenant);
+                app(\App\Services\Production\ProductionStarterKit::class)->install($tenant);
 
                 TenantMembership::create([
                     'user_id'   => $owner->id,

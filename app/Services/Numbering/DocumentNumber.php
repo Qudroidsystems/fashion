@@ -37,6 +37,9 @@ class DocumentNumber
         'sale'             => 'POS-{YYYY}-{SEQ:6}',
         'sale_return'      => 'RTN-{YYYY}-{SEQ:5}',
         'cash_shift'       => 'SFT-{YYYY}-{SEQ:5}',
+        'production_task'  => 'TSK-{YYYY}-{SEQ:5}',
+        'fitting'          => 'FIT-{YYYY}-{SEQ:5}',
+        'delivery'         => 'DLV-{YYYY}-{SEQ:5}',
     ];
 
     public static function next(string $key, ?Tenant $tenant = null): string

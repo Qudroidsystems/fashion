@@ -988,6 +988,17 @@
         @can('Record payment')
         {title:'Record payment',         url:'{{ route("payments.create") }}',         icon:'mdi-cash-plus',      category:'Orders',           keywords:['record','payment','deposit','pay']},
         @endcan
+        @can('View production')
+        {title:'Production board',       url:'{{ route("production.board") }}',        icon:'mdi-view-column',    category:'Production',       keywords:['production','board','task','cutting','sewing','tailor','workroom','stage']},
+        {title:'My work',                url:'{{ route("production.board", ["who" => "mine"]) }}', icon:'mdi-account-hard-hat', category:'Production', keywords:['my','tasks','assigned','work']},
+        {title:'Fittings',               url:'{{ route("fittings.index") }}',          icon:'mdi-human-handsup',  category:'Production',       keywords:['fitting','appointment','try','alteration']},
+        @endcan
+        @can('Manage fitting')
+        {title:'Book a fitting',         url:'{{ route("fittings.create") }}',         icon:'mdi-calendar-plus',  category:'Production',       keywords:['book','fitting','schedule','appointment']},
+        @endcan
+        @can('Manage production workflow')
+        {title:'Production workflows',   url:'{{ route("production.setup") }}',        icon:'mdi-sitemap',        category:'Production',       keywords:['workflow','stages','checklist','quality','setup']},
+        @endcan
         @can('Use POS')
         {title:'Till (POS)',             url:'{{ route("pos.terminal") }}',            icon:'mdi-cash-register',  category:'Point of Sale',    keywords:['pos','till','sell','sale','checkout','cashier','shop']},
         {title:'POS sales',              url:'{{ route("pos.sales.index") }}',         icon:'mdi-receipt',        category:'Point of Sale',    keywords:['sales','receipt','return','void']},
