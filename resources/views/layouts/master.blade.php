@@ -988,6 +988,12 @@
         @can('Record payment')
         {title:'Record payment',         url:'{{ route("payments.create") }}',         icon:'mdi-cash-plus',      category:'Orders',           keywords:['record','payment','deposit','pay']},
         @endcan
+        @can('View project')
+        {title:'Weddings & projects',    url:'{{ route("projects.index") }}',          icon:'mdi-heart',          category:'Projects',         keywords:['wedding','project','event','aso-ebi','uniform','bulk','group','bridesmaid']},
+        @endcan
+        @can('Manage project')
+        {title:'New project',            url:'{{ route("projects.create") }}',         icon:'mdi-heart-plus',     category:'Projects',         keywords:['new','wedding','project','event']},
+        @endcan
         @can('View production')
         {title:'Production board',       url:'{{ route("production.board") }}',        icon:'mdi-view-column',    category:'Production',       keywords:['production','board','task','cutting','sewing','tailor','workroom','stage']},
         {title:'My work',                url:'{{ route("production.board", ["who" => "mine"]) }}', icon:'mdi-account-hard-hat', category:'Production', keywords:['my','tasks','assigned','work']},

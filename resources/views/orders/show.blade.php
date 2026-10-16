@@ -24,6 +24,7 @@
             @if($order->event_date)<span class="cb-meta-pill"><i class="ri-cake-3-line me-1"></i>Event {{ $order->event_date->format('d M Y') }}</span>@endif
             @if($order->revision)<span class="cb-meta-pill">Revision {{ $order->revision }}</span>@endif
             @if($order->quotation)<a href="{{ route('quotations.show', $order->quotation) }}" class="cb-meta-pill text-white">From {{ $order->quotation->number }}</a>@endif
+            @if($order->project && auth()->user()->can('View project'))<a href="{{ route('projects.show', $order->project) }}" class="cb-meta-pill text-white"><i class="ri-heart-2-line me-1"></i>{{ $order->project->name }}</a>@endif
         </x-slot:pills>
         <x-slot:actions>
             <a href="{{ route('customers.show', $c) }}" class="cb-hero-btn"><i class="ri-user-line me-1"></i>Customer</a>

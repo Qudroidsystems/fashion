@@ -18,11 +18,16 @@ class OrderLine extends Model
         'ready' => ['Ready', 'st-success'], 'delivered' => ['Delivered', 'st-success'], 'cancelled' => ['Cancelled', 'st-danger'],
     ];
 
-    protected $fillable = ['order_id', 'measurement_session_id', 'assigned_to', 'wearer', 'status'];
+    protected $fillable = ['order_id', 'participant_id', 'measurement_session_id', 'assigned_to', 'wearer', 'status'];
 
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function participant(): BelongsTo
+    {
+        return $this->belongsTo(ProjectParticipant::class, 'participant_id');
     }
 
     public function measurementSession(): BelongsTo

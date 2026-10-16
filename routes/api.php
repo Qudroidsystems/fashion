@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductionController;
+use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')->name('auth.login');
+
+    // Client project tracking for the customer app — no login, published content only (FR-PRJ-006).
+    Route::get('/public/project-tracking/{token}', [ProjectController::class, 'tracking'])
+        ->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1')->name('public.project-tracking');
 
     Route::middleware(['auth:sanctum', 'api.active'])->group(function () {
         // Account-level endpoints work without a tenant (e.g. a user choosing a house).
@@ -122,8 +127,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/alteration-tasks', [ProductionController::class, 'storeAlteration'])->middleware('idempotent')->name('alteration-tasks.store');
             Route::post('/deliveries', [ProductionController::class, 'storeDelivery'])->middleware('idempotent')->name('deliveries.store');
 
+            // Projects (SRS §8.2)
+            Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+            Route::post('/projects', [ProjectController::class, 'store'])->middleware('idempotent')->name('projects.store');
+            Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+            Route::post('/projects/{project}/participants', [ProjectController::class, 'storeParticipants'])->middleware('idempotent')->name('projects.participants.store');
+            Route::post('/projects/{project}/garments', [ProjectController::class, 'storeGarments'])->middleware('idempotent')->name('projects.garments.store');
+            Route::post('/projects/{project}/milestones', [ProjectController::class, 'storeMilestone'])->middleware('idempotent')->name('projects.milestones.store');
+            Route::post('/projects/{project}/milestones/{milestone}/publish', [ProjectController::class, 'publishMilestone'])->name('projects.milestones.publish');
+            Route::post('/projects/{project}/updates', [ProjectController::class, 'storeUpdate'])->middleware('idempotent')->name('projects.updates.store');
+
             /*
-            | Further module endpoints (projects, …) go here.
+            | Further module endpoints (reports, …) go here.
             */
         });
     });

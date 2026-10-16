@@ -18,7 +18,7 @@ class Order extends Model
     use BelongsToTenant, HasPublicId;
 
     protected $fillable = [
-        'tenant_id', 'number', 'customer_id', 'branch_id', 'quotation_id', 'status', 'title', 'event_date', 'promised_date',
+        'tenant_id', 'number', 'customer_id', 'branch_id', 'quotation_id', 'project_id', 'status', 'title', 'event_date', 'promised_date',
         'priority', 'risk_level', 'risk_reasons', 'risk_assessed_at', 'risk_notified_level', 'subtotal', 'discount_total', 'order_discount', 'total', 'deposit_required', 'customer_notes',
         'internal_notes', 'owner_id', 'revision', 'confirmed_at', 'delivered_at', 'cancelled_at', 'cancel_reason', 'created_by',
     ];
@@ -91,6 +91,11 @@ class Order extends Model
     }
 
     /** What the customer is charged: nothing for drafts or cancelled orders. */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function tasks(): HasMany
     {
         return $this->hasMany(ProductionTask::class);

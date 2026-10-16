@@ -85,7 +85,7 @@ class Pricing
             $row['discount'] = max(0, $discount) / 100;
             $row['line_total'] = (int) round($gross - max(0, $discount)) / 100;
 
-            foreach (['id', 'measurement_session_id', 'wearer', 'assigned_to'] as $extra) {
+            foreach (['id', 'measurement_session_id', 'wearer', 'assigned_to', 'participant_id'] as $extra) {
                 if (array_key_exists($extra, $l)) {
                     $row[$extra] = $l[$extra] === '' ? null : $l[$extra];
                 }
