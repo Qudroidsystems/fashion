@@ -33,7 +33,7 @@
     <div class="brand">
         <div class="brand-mark">@if($house?->logo_url)<img src="{{ $house->logo_url }}" alt="">@else{{ $house?->initials ?? 'FH' }}@endif</div>
         <div>
-            <div class="fw-bold">{{ $house?->name ?? 'Measurements' }}</div>
+            <div class="fw-bold">{{ $house?->name ?? (config('landing.brand') ?: config('app.name')) }}</div>
             @if($house?->phone)<div class="small text-muted">{{ $house->phone }}</div>@endif
         </div>
     </div>

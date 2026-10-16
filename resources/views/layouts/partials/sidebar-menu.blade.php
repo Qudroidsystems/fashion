@@ -8,6 +8,8 @@
         ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
     ];
     $u = auth()->user();
+    $ent = app(\App\Services\Billing\Entitlements::class);
+    $locked = fn (string $feature) => $currentTenant && ! $ent->has($currentTenant, $feature);
 @endphp
 
 <li class="menu-title"><span data-key="t-menu">Menu</span></li>
@@ -112,7 +114,7 @@
     @can('View project')
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">
-            <i class="ri-heart-2-line"></i> <span>Weddings & Projects</span>
+            <i class="ri-heart-2-line"></i> <span>Weddings & Projects</span>@if($locked('projects'))<i class="ri-lock-line ms-1 small opacity-75" title="Not in your plan — open to see, upgrade to use"></i>@endif
         </a>
     </li>
     @endcan
@@ -142,7 +144,7 @@
     <li class="nav-item">
         <a class="nav-link menu-link collapsed {{ $pActive ? 'active' : '' }}" href="#sidebarPos" data-bs-toggle="collapse" role="button"
            aria-expanded="{{ $pActive ? 'true' : 'false' }}" aria-controls="sidebarPos">
-            <i class="ri-shopping-cart-2-line"></i> <span>Point of Sale</span>
+            <i class="ri-shopping-cart-2-line"></i> <span>Point of Sale</span>@if($locked('pos'))<i class="ri-lock-line ms-1 small opacity-75" title="Not in your plan — open to see, upgrade to use"></i>@endif
         </a>
         <div class="collapse menu-dropdown {{ $pActive ? 'show' : '' }}" id="sidebarPos">
             <ul class="nav nav-sm flex-column">
@@ -159,7 +161,7 @@
     <li class="nav-item">
         <a class="nav-link menu-link collapsed {{ $iActive ? 'active' : '' }}" href="#sidebarInventory" data-bs-toggle="collapse" role="button"
            aria-expanded="{{ $iActive ? 'true' : 'false' }}" aria-controls="sidebarInventory">
-            <i class="ri-archive-line"></i> <span>Inventory</span>
+            <i class="ri-archive-line"></i> <span>Inventory</span>@if($locked('inventory'))<i class="ri-lock-line ms-1 small opacity-75" title="Not in your plan — open to see, upgrade to use"></i>@endif
         </a>
         <div class="collapse menu-dropdown {{ $iActive ? 'show' : '' }}" id="sidebarInventory">
             <ul class="nav nav-sm flex-column">
@@ -232,6 +234,14 @@
                 <i class="ri-store-2-line"></i> <span>House Settings</span>
             </a>
         </li>
+        @if($ent->enabled())
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('billing.*') ? 'active' : '' }}" href="{{ route('billing.index') }}">
+                <i class="ri-vip-crown-line"></i> <span>Plan & billing</span>
+                @if($p = $ent->plan($currentTenant))<span class="badge rounded-pill bg-secondary-subtle text-secondary ms-auto" style="font-size:9px;">{{ $p->name }}</span>@endif
+            </a>
+        </li>
+        @endif
         @endcan
         @canany(['View branch', 'Manage branch'])
         <li class="nav-item">
@@ -251,6 +261,13 @@
             <i class="ri-community-line"></i> <span>Fashion Houses</span>
         </a>
     </li>
+    @if(config('billing.enabled'))
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('platform.plans.*') ? 'active' : '' }}" href="{{ route('platform.plans.index') }}">
+            <i class="ri-price-tag-3-line"></i> <span>Plans</span>
+        </a>
+    </li>
+    @endif
 @endif
 
 {{-- MY ACCOUNT --}}

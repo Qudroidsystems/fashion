@@ -153,6 +153,33 @@
         .chip { font-size: .7rem; font-weight: 600; padding: 1px 8px; border-radius: 99px; background: #EEF0F8; }
         .chip.go { background: #FDECCB; color: #8A5300; }
 
+
+        /* Pricing */
+        .pricing-head { display: flex; justify-content: space-between; align-items: end; gap: 2rem; flex-wrap: wrap; }
+        .period { display: inline-flex; background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 4px; }
+        .period button { border: 0; background: transparent; font: inherit; font-weight: 600; color: var(--muted); padding: .5rem 1.1rem; border-radius: 999px; cursor: pointer; }
+        .period button[aria-pressed="true"] { background: var(--indigo); color: #fff; }
+        .plans { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 0; margin-top: 48px; border: 2px solid var(--indigo); border-radius: 24px; overflow: hidden; background: #fff; }
+        .plan { padding: 30px 26px 32px; display: flex; flex-direction: column; border-left: 1px dashed var(--line); position: relative; }
+        .plan:first-child { border-left: 0; }
+        .plan.pick { background: var(--indigo); color: #fff; }
+        .plan.pick .muted, .plan.pick li { color: #D6DBF2; }
+        .plan .tag { position: absolute; top: 18px; right: 18px; background: var(--gold); color: var(--ink); font-size: .78rem; font-weight: 600; padding: .15rem .65rem; border-radius: 999px; }
+        .plan h3 { font-size: 1.5rem; font-weight: 800; }
+        .plan .muted { color: var(--muted); font-size: .95rem; min-height: 2.9em; margin-top: .3rem; }
+        .plan .price { font-family: var(--display); font-weight: 800; font-size: 2.3rem; letter-spacing: -0.03em; margin: 1.2rem 0 .2rem; line-height: 1; }
+        .plan .per { font-size: .9rem; }
+        .plan ul { list-style: none; padding: 0; margin: 1.4rem 0 1.8rem; display: grid; gap: .55rem; font-size: .95rem; flex: 1; align-content: start; }
+        .plan .plus { font-size: .85rem; font-weight: 600; margin: .4rem 0 -.1rem; color: inherit; opacity: .8; display: block; }
+        .plan li { display: grid; grid-template-columns: 18px 1fr; gap: .55rem; }
+        .plan li svg { width: 16px; height: 16px; margin-top: 5px; }
+        .plan li.limit { font-weight: 600; }
+        .plan .btn { justify-content: center; }
+        .plan .btn-line { border-color: var(--line); color: var(--indigo); }
+        .pricing-note { margin-top: 1.4rem; color: var(--muted); font-size: .95rem; }
+        @media (max-width: 1080px) { .plans { grid-template-columns: repeat(2, 1fr); } .plan:nth-child(3) { border-left: 0; } .plan:nth-child(n+3) { border-top: 1px dashed var(--line); } }
+        @media (max-width: 640px) { .plans { grid-template-columns: 1fr; } .plan { border-left: 0; } .plan + .plan { border-top: 1px dashed var(--line); } }
+
         /* Closing + footer */
         .close { text-align: center; padding: 120px 0; }
         .close h2 { margin-inline: auto; }
@@ -201,7 +228,12 @@
                 <a href="#how" class="plain">How it works</a>
                 <a href="#weddings" class="plain">Weddings</a>
                 <a href="#app" class="plain">Mobile app</a>
-                <a href="{{ route('login') }}" class="btn btn-ghost" style="padding:.55rem 1.1rem">Sign in</a>
+                @if($plans->isNotEmpty())<a href="#pricing" class="plain">Pricing</a>@endif
+                @if($signedIn)
+                    <a href="{{ route('dashboard') }}" class="btn btn-ghost" style="padding:.55rem 1.1rem">Open dashboard</a>
+                @else
+                    <a href="{{ route('login') }}" class="btn btn-ghost" style="padding:.55rem 1.1rem">Sign in</a>
+                @endif
             </div>
         </nav>
 
@@ -210,8 +242,12 @@
                 <h1 class="rise r1">From the tape measure to the final fitting.</h1>
                 <p class="lead rise r2">One place for your customers’ measurements, orders and deposits, fabric stock, the shop till, the workroom and every wedding you dress. Built for tailoring studios, bridal houses and fashion brands.</p>
                 <div class="hero-ctas rise r3">
-                    @if($canSignUp)<a href="{{ route('register') }}" class="btn btn-gold">Set up your fashion house</a>@endif
-                    <a href="{{ route('login') }}" class="btn {{ $canSignUp ? 'btn-ghost' : 'btn-gold' }}">Sign in</a>
+                    @if($signedIn)
+                        <a href="{{ route('dashboard') }}" class="btn btn-gold">Open your dashboard</a>
+                    @else
+                        @if($canSignUp)<a href="{{ route('register') }}" class="btn btn-gold">Set up your fashion house</a>@endif
+                        <a href="{{ route('login') }}" class="btn {{ $canSignUp ? 'btn-ghost' : 'btn-gold' }}">Sign in</a>
+                    @endif
                 </div>
                 @if($canSignUp)<p class="hero-note rise r3">Free trial. No card needed. Your data stays yours.</p>@endif
             </div>
@@ -379,6 +415,54 @@
         </div>
     </section>
 
+
+    @if($plans->isNotEmpty())
+    <section id="pricing">
+        <div class="wrap">
+            <div class="pricing-head">
+                <div>
+                    <h2>Start free. Pay when you grow.</h2>
+                    <p class="lead" style="margin-top:1rem">Every plan includes customers, measurements, styles, quotes, orders, invoices and the workroom board. Change plan any time; nothing you add is ever deleted.</p>
+                </div>
+                <div class="period" role="group" aria-label="Billing period">
+                    <button type="button" data-period="monthly" aria-pressed="true">Monthly</button>
+                    <button type="button" data-period="yearly" aria-pressed="false">Yearly, 2 months free</button>
+                </div>
+            </div>
+            <div class="plans" style="--n: {{ min(4, $plans->count()) }}">
+                @foreach($plans as $p)
+                    @php $prev = $loop->index ? $plans[$loop->index - 1] : null; $extra = $prev ? collect($p->featureLabels())->diff($prev->featureLabels()) : collect($p->featureLabels()); @endphp
+                    <div class="plan {{ $p->highlight ? 'pick' : '' }}">
+                        @if($p->highlight)<span class="tag">Most chosen</span>@endif
+                        <h3>{{ $p->name }}</h3>
+                        <p class="muted">{{ $p->tagline }}</p>
+                        <div class="price" data-monthly="{{ $p->price_monthly > 0 ? \App\Support\Money::format($p->price_monthly) : 'Free' }}" data-yearly="{{ $p->price_yearly > 0 ? \App\Support\Money::format($p->price_yearly) : 'Free' }}">{{ $p->price_monthly > 0 ? \App\Support\Money::format($p->price_monthly) : 'Free' }}</div>
+                        <div class="per" data-monthly="{{ $p->price_monthly > 0 ? 'a month' : 'for ever' }}" data-yearly="{{ $p->price_yearly > 0 ? 'a year' : 'for ever' }}">{{ $p->price_monthly > 0 ? 'a month' : 'for ever' }}</div>
+                        <ul>
+                            @foreach(\App\Support\Billing\Features::LIMITS as $k => $l)
+                                <li class="limit"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#F2A93B" stroke-width="2"/></svg>
+                                    {{ $p->limit($k) === null ? 'Unlimited ' . strtolower($l[2]) : number_format($p->limit($k)) . ' ' . ($p->limit($k) === 1 ? $l[1] : $l[2]) }}</li>
+                            @endforeach
+                            @if($prev && $extra->isNotEmpty())<li class="plus" style="display:block">Everything in {{ $prev->name }}, plus:</li>@endif
+                            @foreach($extra as $f)
+                                <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8.5l4 4 8-9" fill="none" stroke="{{ $p->highlight ? '#F2A93B' : '#1B2559' }}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ $f }}</li>
+                            @endforeach
+                        </ul>
+                        @if($signedIn)
+                            <a href="{{ route('billing.index') }}" class="btn {{ $p->highlight ? 'btn-gold' : 'btn-ghost btn-line' }}">See your plan</a>
+                        @elseif($canSignUp)
+                            <a href="{{ route('register') }}" class="btn {{ $p->highlight ? 'btn-gold' : 'btn-ghost btn-line' }}">{{ $p->isPaid() ? 'Start your free trial' : 'Start free' }}</a>
+                        @else
+                            <a href="{{ route('login') }}" class="btn {{ $p->highlight ? 'btn-gold' : 'btn-ghost btn-line' }}">Sign in</a>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            <p class="pricing-note">New houses get {{ config('tenancy.trial_days') }} days of {{ optional($plans->firstWhere('code', config('billing.trial_plan')))->name ?? 'the full product' }} free, with no card. Afterwards you stay on Free unless you choose a plan. Prices are in naira and paid securely with Paystack.</p>
+        </div>
+    </section>
+    @endif
+
     <section id="app" class="app">
         <div class="wrap app-grid">
             <div>
@@ -419,8 +503,12 @@
             <h2>Bring your next order in here.</h2>
             <p class="lead" style="margin:1.2rem auto 0">Set up your house in a few minutes. Your staff join with their own logins and see only what they need.</p>
             <div class="hero-ctas">
-                @if($canSignUp)<a href="{{ route('register') }}" class="btn btn-ink">Set up your fashion house</a>@endif
-                <a href="{{ route('login') }}" class="btn {{ $canSignUp ? 'btn-ghost' : 'btn-ink' }}">Sign in</a>
+                @if($signedIn)
+                    <a href="{{ route('dashboard') }}" class="btn btn-ink">Open your dashboard</a>
+                @else
+                    @if($canSignUp)<a href="{{ route('register') }}" class="btn btn-ink">Set up your fashion house</a>@endif
+                    <a href="{{ route('login') }}" class="btn {{ $canSignUp ? 'btn-ghost' : 'btn-ink' }}">Sign in</a>
+                @endif
             </div>
         </div>
     </section>
@@ -432,5 +520,15 @@
         <span>Built by <a href="https://qudroids.com" target="_blank" rel="noopener">Qudroid Systems</a></span>
     </div>
 </footer>
+
+<script>
+(() => {
+    const btns = document.querySelectorAll('[data-period]');
+    btns.forEach(b => b.addEventListener('click', () => {
+        btns.forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+        document.querySelectorAll('.plan [data-monthly]').forEach(el => el.textContent = el.dataset[b.dataset.period]);
+    }));
+})();
+</script>
 </body>
 </html>

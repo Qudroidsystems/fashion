@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.active'         => \App\Http\Middleware\EnsureApiUserActive::class,
             'api.tenant'         => \App\Http\Middleware\ResolveApiTenant::class,
             'idempotent'         => \App\Http\Middleware\Idempotent::class,
+            'plan'               => \App\Http\Middleware\EnforcePlan::class,
         ]);
 
         // Every request gets a correlation id (logs, audit trail, X-Request-Id header).
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\ResolveTenant::class,
             \App\Http\Middleware\ForcePasswordChange::class,
+            \App\Http\Middleware\EnforcePlan::class,   // plan features (subscriptions)
         ]);
 
         // Tenant context must exist BEFORE route-model binding, so a URL like

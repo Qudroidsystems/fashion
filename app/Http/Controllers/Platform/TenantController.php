@@ -29,7 +29,7 @@ class TenantController extends Controller
 
     public function index(Request $request): View
     {
-        $tenants = Tenant::withCount([
+        $tenants = Tenant::with('subscription.plan')->withCount([
                 'memberships as staff_count' => fn ($q) => $q->where('status', 'active'),
                 'branches',
             ])
@@ -42,6 +42,8 @@ class TenantController extends Controller
             'tenants'   => $tenants,
             'statuses'  => Tenant::STATUSES,
             'counts'    => Tenant::selectRaw('status, count(*) c')->groupBy('status')->pluck('c', 'status'),
+            'plans'     => \App\Models\Plan::ordered()->get(),
+            'billing'   => app(\App\Services\Billing\Entitlements::class)->enabled(),
         ]);
     }
 

@@ -586,6 +586,14 @@
 
 
     @yield('content')
+    @isset($planLock)
+        {{-- Plan feature not included: the page is read-only (App\Http\Middleware\EnforcePlan). --}}
+        <div role="status" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1080;max-width:min(720px,calc(100% - 32px));background:#1B2559;color:#fff;border-radius:14px;padding:12px 16px;box-shadow:0 12px 30px rgba(0,0,0,.25);display:flex;gap:12px;align-items:center;font-size:.9rem">
+            <i class="ri-lock-line fs-5" style="color:#F2A93B"></i>
+            <span>Read-only. {{ $planLock['message'] }}</span>
+            @can('Manage tenant settings')<a href="{{ route('billing.index') }}" class="btn btn-sm text-nowrap" style="background:#F2A93B;color:#121735;font-weight:600">See plans</a>@endcan
+        </div>
+    @endisset
 
     <footer class="footer">
         <div class="container-fluid">

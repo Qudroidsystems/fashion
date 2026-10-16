@@ -41,6 +41,22 @@ Artisan::command('fhmp:production-kit {tenant? : slug; all houses when omitted}'
     });
 })->purpose('Install the starter production workflows and quality checklist (skips houses that already have workflows)');
 
+/* Subscriptions: trials ending, renewals (saved card), failed-payment retries, grace periods, notices. */
+Artisan::command('fhmp:billing', function (\App\Services\Billing\SubscriptionService $subs) {
+    if (! app(\App\Services\Billing\Entitlements::class)->enabled()) {
+        $this->info('Subscriptions are off (single-house mode or BILLING_ENABLED=false).');
+
+        return;
+    }
+    $r = $subs->run();
+    $this->info("Renewed {$r['renewed']}, failed {$r['failed']}, moved to free {$r['to_free']}, notices {$r['notices']}.");
+})->purpose('Renew house subscriptions and move unpaid ones to the free plan');
+\Illuminate\Support\Facades\Schedule::command('fhmp:billing')->hourly()->withoutOverlapping();
+
+Artisan::command('fhmp:billing-plans', function () {
+    $this->info(\App\Support\Billing\PlanDefaults::install() . ' default plan(s) added.');
+})->purpose('Add the four starting plans if they are missing');
+
 /*
 | FR-MEA-011: remind staff to re-measure customers whose last approved
 | measurements are older than the house's review interval. One follow-up

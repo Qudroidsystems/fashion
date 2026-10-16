@@ -26,7 +26,7 @@ class ResolveTenant
 {
     /** Routes a user without any tenant (e.g. a platform operator) may still open. */
     protected array $tenantlessRoutes = [
-        'logout', 'platform.*', 'profile.*', 'tenant.switch',
+        'logout', 'platform.*', 'profile.*', 'tenant.switch', 'home', 'onboarding.*',
     ];
 
     public function __construct(protected TenantContext $context)
@@ -51,6 +51,13 @@ class ResolveTenant
 
             if ($user->is_platform_admin && config('tenancy.mode') !== 'single') {
                 return redirect()->route('platform.tenants.index');
+            }
+
+            // Signed up (e.g. with Google) and never part of any house yet: finish the account.
+            // Staff whose access was removed are signed out as before.
+            if (\App\Http\Controllers\Auth\RegisterController::enabled()
+                && ! TenantMembership::withoutTenantScope()->where('user_id', $user->id)->exists()) {
+                return redirect()->route('onboarding.show');
             }
 
             return $this->signOut($request, 'Your account is not linked to an active fashion house. Please contact your administrator.');

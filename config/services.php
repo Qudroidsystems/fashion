@@ -59,4 +59,13 @@ return [
         'project_id'  => env('FCM_PROJECT_ID'),
     ],
 
+
+    // Sign in with Google (OAuth 2.0 / OpenID Connect). Create the client at
+    // https://console.cloud.google.com/apis/credentials and add the redirect URI below.
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT_URI'),   // defaults to {APP_URL}/auth/google/callback
+    ],
+
 ];
