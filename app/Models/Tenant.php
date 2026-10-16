@@ -64,11 +64,23 @@ class Tenant extends Model
             ->withTimestamps();
     }
 
+    public function subscription(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Subscription::class);
+    }
+
     /** Whether staff can sign in and work (SRS FR-TEN-005). */
     public function isUsable(): bool
     {
         if (! in_array($this->status, config('tenancy.usable_statuses', []), true)) {
             return false;
+        }
+
+        // With subscriptions on, an ended trial or unpaid renewal moves the house to the free plan
+        // instead of locking it out (App\Services\Billing\SubscriptionService). Only the
+        // platform can suspend or cancel a house.
+        if (app(\App\Services\Billing\Entitlements::class)->enabled()) {
+            return true;
         }
 
         if ($this->status === 'trial' && $this->trial_ends_at && $this->trial_ends_at->isPast()) {

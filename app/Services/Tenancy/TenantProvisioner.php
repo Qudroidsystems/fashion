@@ -70,6 +70,14 @@ class TenantProvisioner
                 AuditLogger::log('tenant.created', $tenant, after: $tenant->only(['name', 'slug', 'status']), tenantId: $tenant->id);
             });
 
+            // Subscriptions (multi-house mode): a trial of the trial plan, or the free plan.
+            $billing = app(\App\Services\Billing\Entitlements::class);
+            if ($billing->enabled() && \App\Models\Plan::exists()) {
+                $subs = app(\App\Services\Billing\SubscriptionService::class);
+                ($data['status'] ?? 'trial') === 'trial' ? $subs->startTrial($tenant) : $subs->startFree($tenant);
+                $billing->forget();
+            }
+
             return $tenant;
         });
     }

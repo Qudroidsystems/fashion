@@ -40,7 +40,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
 
         // Everything below runs inside a fashion house.
-        Route::middleware('api.tenant')->group(function () {
+        Route::middleware(['api.tenant', 'plan'])->group(function () {
             Route::get('/tenants/current', [TenantController::class, 'current'])->name('tenants.current');
 
             // Customers (SRS §8.2)

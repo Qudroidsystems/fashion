@@ -46,10 +46,20 @@ it('blocks a tailor from staff management', function () {
     $this->actingAs($tailor)->get('/settings/house')->assertForbidden();
 });
 
-it('signs out a user who belongs to no fashion house', function () {
+it('sends a new user with no fashion house to complete their account, or signs them out when sign-up is off', function () {
     $loner = User::factory()->create();
+    $this->actingAs($loner)->get('/dashboard')->assertRedirect('/welcome');
 
+    config(['tenancy.self_signup' => false]);
     $this->actingAs($loner)->get('/dashboard')->assertRedirect('/login');
+});
+
+it('signs out staff whose access to their fashion house was removed', function () {
+    [$tenant] = makeHouse();
+    $tailor = addStaff($tenant, 'Tailor');
+    \App\Models\TenantMembership::withoutTenantScope()->where('user_id', $tailor->id)->update(['status' => 'suspended']);
+
+    $this->actingAs($tailor)->get('/dashboard')->assertRedirect('/login');
 });
 
 it('forces a temporary password to be changed first', function () {

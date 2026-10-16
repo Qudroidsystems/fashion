@@ -34,7 +34,7 @@
         </form>
         <div class="table-responsive">
             <table class="cb-table stack">
-                <thead><tr><th>Fashion house</th><th>Staff</th><th>Branches</th><th>Currency</th><th>Created</th><th>Status</th></tr></thead>
+                <thead><tr><th>Fashion house</th><th>Staff</th><th>Branches</th><th>Currency</th><th>Created</th>@if($billing)<th>Plan</th>@endif<th>Status</th></tr></thead>
                 <tbody>
                 @forelse($tenants as $t)
                     @php $pill = ['trial' => 'st-info', 'active' => 'st-success', 'past_due' => 'st-warning', 'suspended' => 'st-danger', 'cancelled' => 'st-muted'][$t->status] ?? 'st-muted'; @endphp
@@ -47,6 +47,26 @@
                         <td data-label="Branches">{{ $t->branches_count }}</td>
                         <td data-label="Currency">{{ $t->currency_code }}</td>
                         <td data-label="Created">{{ $t->created_at->format('d M Y') }}</td>
+                        @if($billing)
+                        @php $sub = $t->subscription; @endphp
+                        <td data-label="Plan">
+                            <div class="d-flex align-items-center gap-2"><span class="fw-semibold">{{ $sub?->plan?->name ?? '—' }}</span>
+                                @if($sub)<span class="status-pill {{ $sub->status_pill }}">{{ $sub->status_label }}</span>@endif
+                                <button type="button" class="btn btn-sm btn-link p-0" data-bs-toggle="collapse" data-bs-target="#plan{{ $t->id }}">Change</button></div>
+                            @if($sub?->endsAt())<div class="small text-muted">{{ $sub->status === 'trialing' ? 'Trial ends' : 'Paid until' }} {{ $sub->endsAt()->format('d M Y') }}</div>@endif
+                            <form method="POST" action="{{ route('platform.tenants.plan', $t) }}" class="collapse mt-2" id="plan{{ $t->id }}">@csrf
+                                <div class="d-flex flex-wrap gap-1">
+                                    <select name="plan_id" class="form-select form-select-sm" style="width:auto">@foreach($plans as $pl)<option value="{{ $pl->id }}" @selected($sub?->plan_id === $pl->id)>{{ $pl->name }}</option>@endforeach</select>
+                                    <select name="interval" class="form-select form-select-sm" style="width:auto"><option value="monthly">Monthly</option><option value="yearly" @selected($sub?->interval === 'yearly')>Yearly</option></select>
+                                    <select name="status" class="form-select form-select-sm" style="width:auto"><option value="active">Active</option><option value="trialing">Trial</option></select>
+                                    <input type="date" name="until" class="form-control form-control-sm" style="width:auto" title="Until (empty = no end date)">
+                                    <input type="number" name="paid" min="0" step="0.01" class="form-control form-control-sm" style="width:110px" placeholder="Paid offline">
+                                    <input name="note" class="form-control form-control-sm" style="width:170px" maxlength="255" placeholder="Note, e.g. bank transfer">
+                                    <button class="btn btn-sm btn-primary">Save</button>
+                                </div>
+                            </form>
+                        </td>
+                        @endif
                         <td data-label="Status">
                             <form method="POST" action="{{ route('platform.tenants.status', $t) }}" class="d-flex gap-2 align-items-center">
                                 @csrf @method('PATCH')
@@ -61,7 +81,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6"><div class="empty-state"><i class="ri-store-3-line"></i><h6>No fashion houses yet</h6><p>Create the first one.</p></div></td></tr>
+                    <tr><td colspan="7"><div class="empty-state"><i class="ri-store-3-line"></i><h6>No fashion houses yet</h6><p>Create the first one.</p></div></td></tr>
                 @endforelse
                 </tbody>
             </table>

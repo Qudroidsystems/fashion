@@ -655,6 +655,14 @@
                                                 </div>
                                             </form>
 
+                                            @if(\App\Http\Controllers\Auth\GoogleController::enabled())
+                                                <div class="d-flex align-items-center gap-2 my-3 text-muted small"><hr class="flex-grow-1 m-0"><span>or</span><hr class="flex-grow-1 m-0"></div>
+                                                <a href="{{ route('auth.google') }}" class="btn w-100 d-flex align-items-center justify-content-center gap-2" style="border:1px solid #dadce0;border-radius:12px;padding:.7rem 1rem;background:#fff;color:#3c4043;font-weight:600">
+                                                    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.2C12.4 13.7 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.5c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.8-4.5l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.3 0-11.6-4.2-13.5-10l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>
+                                                    Continue with Google
+                                                </a>
+                                            @endif
+
                                             @if (Route::has('register') && \App\Http\Controllers\Auth\RegisterController::enabled())
                                             <div class="text-center mt-4">
                                                 <p class="mb-0 text-muted small">New fashion house? <a href="{{ route('register') }}" class="fw-semibold text-primary text-decoration-none">Create your account</a></p>

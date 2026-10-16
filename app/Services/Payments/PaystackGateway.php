@@ -11,12 +11,15 @@ use Illuminate\Validation\ValidationException;
  * Paystack (https://paystack.com/docs/api). Each fashion house uses its own
  * Paystack account; the secret key is stored encrypted in the tenant settings
  * and never sent back to the browser (SRS FR-ADM-003).
+ *
+ * PaystackGateway::platform() uses the platform's own account (config
+ * billing.paystack) for house subscriptions.
  */
 class PaystackGateway
 {
     public const BASE = 'https://api.paystack.co';
 
-    public function __construct(protected Tenant $tenant)
+    public function __construct(protected ?Tenant $tenant, protected ?string $platformSecret = null)
     {
     }
 
@@ -25,13 +28,26 @@ class PaystackGateway
         return new self($tenant);
     }
 
+    /** The platform's own Paystack account (subscriptions). */
+    public static function platform(): self
+    {
+        return new self(null, config('billing.paystack.secret_key') ?: null);
+    }
+
     public function enabled(): bool
     {
+        if (! $this->tenant) {
+            return $this->platformSecret !== null;
+        }
+
         return (bool) $this->tenant->setting('paystack.enabled') && $this->secret() !== null;
     }
 
     public function secret(): ?string
     {
+        if (! $this->tenant) {
+            return $this->platformSecret;
+        }
         $enc = $this->tenant->setting('paystack.secret_key');
         if (! $enc) {
             return null;
@@ -70,6 +86,31 @@ class PaystackGateway
         }
 
         return $res->json('data');   // status: success|failed|abandoned|ongoing…, amount (kobo), currency, channel, paid_at, id
+    }
+
+    /**
+     * Charge a saved card again (subscription renewals). Returns Paystack's
+     * transaction data; status "success" means the money is taken.
+     */
+    public function chargeAuthorization(string $reference, float $amount, string $currency, string $email, string $authorizationCode, array $metadata = []): array
+    {
+        try {
+            $res = Http::withToken($this->secret())->acceptJson()->timeout(30)->post(self::BASE . '/transaction/charge_authorization', [
+                'reference'          => $reference,
+                'amount'             => (int) round($amount * 100),
+                'currency'           => $currency,
+                'email'              => $email,
+                'authorization_code' => $authorizationCode,
+                'metadata'           => $metadata,
+            ]);
+        } catch (\Illuminate\Http\Client\ConnectionException) {
+            return ['status' => 'failed', 'gateway_response' => 'Could not reach Paystack; will try again'];
+        }
+        if (! $res->successful() || ! $res->json('status')) {
+            return ['status' => 'failed', 'gateway_response' => $res->json('message') ?? 'HTTP ' . $res->status()];
+        }
+
+        return $res->json('data');
     }
 
     /** x-paystack-signature = HMAC-SHA512 of the raw body with the secret key. */

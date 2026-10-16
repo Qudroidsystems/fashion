@@ -21,14 +21,25 @@ use Illuminate\Support\Facades\Session;
 |--------------------------------------------------------------------------
 */
 
-// Public landing page; signed-in users go straight to their dashboard.
-Route::get('/', fn () => Auth::check() ? redirect()->route('dashboard') : view('landing', [
-    'siteName'   => config('landing.brand'),
-    'mobile'     => config('landing.app'),
-    'canSignUp'  => config('tenancy.mode') !== 'single' && config('tenancy.self_signup') && \Illuminate\Support\Facades\Route::has('register'),
+// Public landing page, for everyone. Signed-in users see "Open dashboard" instead of "Sign in";
+// logging in still lands on /dashboard (LoginController::$redirectTo).
+Route::get('/', fn () => view('landing', [
+    'siteName'   => config('landing.brand') ?: config('app.name', 'Fashion House Platform'),
+    'mobile'     => array_merge(['android_url' => null, 'ios_url' => null, 'is_demo' => true], (array) config('landing.app', [])),
+    'signedIn'   => Auth::check(),
+    // Plans as the platform super admin set them (empty before migrating, or in single-house mode).
+    'plans'      => rescue(fn () => app(\App\Services\Billing\Entitlements::class)->enabled()
+        ? \App\Models\Plan::where('is_active', true)->where('is_public', true)->ordered()->get() : collect(), collect(), false),
+    'canSignUp'  => ! Auth::check() && config('tenancy.mode') !== 'single' && config('tenancy.self_signup') && \Illuminate\Support\Facades\Route::has('register'),
 ]))->name('home');
 
 Auth::routes(['verify' => true]);
+
+// Sign in / sign up with Google, and finishing a new account (its fashion house).
+Route::get('/auth/google', [\App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->middleware('throttle:20,1')->name('auth.google');
+Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'callback'])->middleware('throttle:20,1')->name('auth.google.callback');
+Route::get('/welcome', [\App\Http\Controllers\Auth\OnboardingController::class, 'show'])->name('onboarding.show');
+Route::post('/welcome', [\App\Http\Controllers\Auth\OnboardingController::class, 'store'])->name('onboarding.store');
 
 // CSRF refresh (used by long-open pages)
 Route::get('/refresh-csrf', function () {
@@ -51,6 +62,10 @@ Route::post('/m/{token}', [\App\Http\Controllers\Measurements\PublicMeasurementC
 */
 
 // Online payments (SRS FR-ORD-008, FR-ADM-004): provider webhook per house and the customer's return page.
+// Platform subscription payments (the platform's own Paystack account)
+Route::post('/webhooks/billing/paystack', [\App\Http\Controllers\Billing\BillingController::class, 'webhook'])
+    ->middleware('throttle:120,1')->name('webhooks.billing');
+
 // Client project tracking page (no login; random revocable token — SRS FR-PRJ-006, scenario 39)
 Route::get('/t/{token}', [\App\Http\Controllers\Projects\TrackingController::class, 'show'])
     ->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1')->name('projects.track');
@@ -107,6 +122,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
         Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
         Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'updateStatus'])->name('tenants.status');
+        Route::post('/tenants/{tenant}/plan', [\App\Http\Controllers\Platform\PlanController::class, 'setTenantPlan'])->name('tenants.plan');
+        Route::get('/plans', [\App\Http\Controllers\Platform\PlanController::class, 'index'])->name('plans.index');
+        Route::post('/plans', [\App\Http\Controllers\Platform\PlanController::class, 'store'])->name('plans.store');
+        Route::put('/plans/{plan}', [\App\Http\Controllers\Platform\PlanController::class, 'update'])->name('plans.update');
     });
 
     // ── Business modules (SRS roadmap), one route file each ─────────────
@@ -118,4 +137,10 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/pos.php';
     require __DIR__ . '/modules/production.php';
     require __DIR__ . '/modules/projects.php';
+
+    // Plan & billing (subscriptions, multi-house mode)
+    Route::get('/billing', [\App\Http\Controllers\Billing\BillingController::class, 'index'])->name('billing.index');
+    Route::post('/billing/plan', [\App\Http\Controllers\Billing\BillingController::class, 'choose'])->name('billing.choose');
+    Route::get('/billing/return', [\App\Http\Controllers\Billing\BillingController::class, 'return'])->name('billing.return');
+    Route::post('/billing/cancel', [\App\Http\Controllers\Billing\BillingController::class, 'cancel'])->name('billing.cancel');
 });

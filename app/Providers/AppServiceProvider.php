@@ -18,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(TenantContext::class);
+        $this->app->singleton(\App\Services\Billing\Entitlements::class);
     }
 
     public function boot(): void
@@ -40,6 +41,19 @@ class AppServiceProvider extends ServiceProvider
             ];
 
             $view->with('brand', $brand)->with('currentTenant', $tenant);
+        });
+
+        // Plan limits (subscriptions): adding a customer, staff member or branch past the plan's limit is refused.
+        $limit = fn (string $key) => function ($model) use ($key) {
+            $tenant = $model->tenant_id ? \App\Models\Tenant::find($model->tenant_id) : CurrentTenant::get();
+            app(\App\Services\Billing\Entitlements::class)->assertCanAdd($tenant, $key);
+        };
+        \App\Models\Customer::creating($limit('customers'));
+        \App\Models\Branch::creating($limit('branches'));
+        \App\Models\TenantMembership::creating(function ($m) use ($limit) {
+            if (($m->status ?? 'active') === 'active') {
+                $limit('staff')($m);
+            }
         });
 
         // Sign-in events go to the audit trail (FR-IAM-005).
