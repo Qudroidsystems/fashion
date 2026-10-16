@@ -21,6 +21,26 @@ use Illuminate\Support\Facades\Session;
 |--------------------------------------------------------------------------
 */
 
+/*
+| House websites — registered first, so "/" on a house's subdomain is that house's site.
+| {slug}.SITES_DOMAIN, the preview address /s/{slug}, or the house's own verified domain.
+*/
+$siteRoutes = function (string $prefix) {
+    $c = \App\Http\Controllers\Sites\SiteController::class;
+    Route::get('/', [$c, 'home'])->name($prefix . 'home');
+    Route::get('/collection', [$c, 'collection'])->name($prefix . 'collection');
+    Route::get('/collection/{style}', [$c, 'style'])->name($prefix . 'style');
+    Route::get('/shop', [$c, 'shop'])->name($prefix . 'shop');
+    Route::get('/contact', [$c, 'contact'])->name($prefix . 'contact');
+    Route::post('/contact', [$c, 'enquire'])->middleware('throttle:10,1')->name($prefix . 'enquire');
+};
+if ($sitesDomain = config('sites.domain')) {
+    // Reserved labels (www, app, the platform's own subdomain…) never match, so those hosts keep the normal pages.
+    $notReserved = '(?!(?:' . implode('|', array_map(fn ($r) => preg_quote($r, '#'), config('sites.reserved', []))) . ')\\.)';
+    Route::domain('{site}.' . $sitesDomain)->where(['site' => $notReserved . '[a-z0-9][a-z0-9-]*'])->group(fn () => $siteRoutes('site.'));
+}
+Route::prefix('s/{site}')->where(['site' => '[a-z0-9][a-z0-9-]*'])->group(fn () => $siteRoutes('sitepath.'));
+
 // Public landing page, for everyone. Signed-in users see "Open dashboard" instead of "Sign in";
 // logging in still lands on /dashboard (LoginController::$redirectTo).
 Route::get('/', fn () => view('landing', [
@@ -137,6 +157,14 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/pos.php';
     require __DIR__ . '/modules/production.php';
     require __DIR__ . '/modules/projects.php';
+
+    // House website (settings and the enquiries it receives)
+    Route::get('/website', [\App\Http\Controllers\Sites\WebsiteController::class, 'edit'])->name('website.edit');
+    Route::put('/website', [\App\Http\Controllers\Sites\WebsiteController::class, 'update'])->name('website.update');
+    Route::post('/website/domain-check', [\App\Http\Controllers\Sites\WebsiteController::class, 'checkDomain'])->name('website.domain-check');
+    Route::get('/website/enquiries', [\App\Http\Controllers\Sites\WebsiteController::class, 'enquiries'])->name('site-enquiries.index');
+    Route::patch('/website/enquiries/{enquiry}', [\App\Http\Controllers\Sites\WebsiteController::class, 'updateEnquiry'])->name('site-enquiries.update');
+    Route::post('/website/enquiries/{enquiry}/convert', [\App\Http\Controllers\Sites\WebsiteController::class, 'convert'])->name('site-enquiries.convert');
 
     // Plan & billing (subscriptions, multi-house mode)
     Route::get('/billing', [\App\Http\Controllers\Billing\BillingController::class, 'index'])->name('billing.index');

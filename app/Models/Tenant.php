@@ -20,10 +20,11 @@ class Tenant extends Model
     protected $fillable = [
         'name', 'slug', 'domain', 'email', 'phone', 'address', 'timezone', 'locale',
         'currency_code', 'logo_path', 'brand_color', 'status', 'trial_ends_at',
-        'grace_ends_at', 'settings', 'created_by',
+        'grace_ends_at', 'settings', 'created_by', 'domain_verified_at',
     ];
 
     protected $casts = [
+        'domain_verified_at' => 'datetime',
         'settings'      => 'array',
         'trial_ends_at' => 'datetime',
         'grace_ends_at' => 'datetime',

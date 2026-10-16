@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Every request gets a correlation id (logs, audit trail, X-Request-Id header).
         $middleware->prepend(\App\Http\Middleware\AssignCorrelationId::class);
+        // A house's own domain is served as its subdomain (house websites).
+        $middleware->prepend(\App\Http\Middleware\ResolveSiteDomain::class);
 
         // Web: work inside the user's fashion house; temporary passwords must be changed first.
         $middleware->web(append: [

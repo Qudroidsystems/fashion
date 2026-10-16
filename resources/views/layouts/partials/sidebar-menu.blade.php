@@ -42,6 +42,10 @@
                 <li class="nav-item"><a href="{{ route('customers.create') }}" class="nav-link {{ request()->routeIs('customers.create') ? 'active' : '' }}">New customer</a></li>
                 @endcan
                 <li class="nav-item"><a href="{{ route('follow-ups.index') }}" class="nav-link {{ request()->routeIs('follow-ups.*') ? 'active' : '' }}">Follow-ups</a></li>
+                @if(! $locked('website'))
+                @php $newEnq = \App\Models\SiteEnquiry::where('status', 'new')->count(); @endphp
+                <li class="nav-item"><a href="{{ route('site-enquiries.index') }}" class="nav-link {{ request()->routeIs('site-enquiries.*') ? 'active' : '' }}">Website enquiries @if($newEnq)<span class="badge rounded-pill bg-danger ms-1">{{ $newEnq }}</span>@endif</a></li>
+                @endif
             </ul>
         </div>
     </li>
@@ -232,6 +236,11 @@
         <li class="nav-item">
             <a class="nav-link menu-link {{ request()->routeIs('settings.tenant.*') ? 'active' : '' }}" href="{{ route('settings.tenant.edit') }}">
                 <i class="ri-store-2-line"></i> <span>House Settings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('website.*') ? 'active' : '' }}" href="{{ route('website.edit') }}">
+                <i class="ri-global-line"></i> <span>Website</span>@if($locked('website'))<i class="ri-lock-line ms-1 small opacity-75"></i>@endif
             </a>
         </li>
         @if($ent->enabled())
