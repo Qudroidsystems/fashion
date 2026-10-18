@@ -133,7 +133,7 @@ it('books fittings with reminders, and moving one cancels the old reminders (sce
         // Only the new booking's reminders go out — to staff in-app, and to the customer by email with consent.
         CustomerConsent::create(['customer_id' => $this->customer->id, 'channel' => 'email', 'purpose' => 'transactional', 'granted' => true, 'recorded_at' => now()]);
         Notification::fake();
-        Carbon::setTestNow(now()->addDays(8)->setTime(1, 0));
+        Carbon::setTestNow(now($this->house->timezone)->addDays(8)->setTime(1, 0));   // house clock, so it holds near midnight UTC too
         expect($fits->sendDue())->toBe(1);
         Notification::assertSentOnDemand(\App\Notifications\FittingReminderDue::class, fn ($n, $ch, $notifiable) => $notifiable->routes['mail'] === 'ngozi@example.com');
         expect(FittingReminder::where('fitting_id', $f->id)->where('status', 'sent')->exists())->toBeFalse()

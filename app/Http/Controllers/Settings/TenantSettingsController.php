@@ -63,6 +63,7 @@ class TenantSettingsController extends Controller
             'fitting_reminder_hours'   => ['nullable', 'string', 'max:60', 'regex:/^\s*\d{1,3}(\s*,\s*\d{1,3})*\s*$/'],
             'production_task_limit'    => 'nullable|integer|min:0|max:200',
             'release_with_balance'     => 'nullable|boolean',
+            'weekly_summary'           => 'nullable|boolean',
             'paystack_enabled'         => 'nullable|boolean',
             'paystack_public_key'      => ['nullable', 'string', 'max:120', 'regex:/^pk_(test|live)_[A-Za-z0-9]+$/'],
             'paystack_secret_key'      => ['nullable', 'string', 'max:120', 'regex:/^sk_(test|live)_[A-Za-z0-9]+$/'],
@@ -123,6 +124,9 @@ class TenantSettingsController extends Controller
         }
         $settings['production_task_limit'] = isset($data['production_task_limit']) ? (int) $data['production_task_limit'] : ($settings['production_task_limit'] ?? 12);
         $settings['release_with_balance'] = (bool) ($data['release_with_balance'] ?? false);
+        if (array_key_exists('weekly_summary', $data)) {
+            $settings['reports'] = array_merge($settings['reports'] ?? [], ['weekly_summary' => (bool) $data['weekly_summary']]);
+        }
         $settings['numbering'] = array_filter(array_merge($settings['numbering'] ?? [], $data['numbering'] ?? []));
 
         $tenant->fill([

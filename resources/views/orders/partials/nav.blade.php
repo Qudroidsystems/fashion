@@ -6,4 +6,7 @@
         <li class="nav-item"><a href="{{ route('invoices.index') }}" class="nav-link text-nowrap py-1 px-3 {{ request()->routeIs('invoices.*') ? 'active' : '' }}"><i class="ri-bill-line me-1"></i>Invoices</a></li>
         <li class="nav-item"><a href="{{ route('payments.index') }}" class="nav-link text-nowrap py-1 px-3 {{ request()->routeIs('payments.*', 'refunds.*') ? 'active' : '' }}"><i class="ri-bank-card-line me-1"></i>Payments</a></li>
     @endcan
+    @if($u->can('Manage expense') || $u->can('View financial reports'))
+        <li class="nav-item"><a href="{{ route('expenses.index') }}" class="nav-link text-nowrap py-1 px-3 {{ request()->routeIs('expenses.*') ? 'active' : '' }}"><i class="ri-money-dollar-box-line me-1"></i>Expenses</a></li>
+    @endif
 </ul>

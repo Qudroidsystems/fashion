@@ -69,7 +69,7 @@ class PermissionCatalog
             'Manage appointment', 'Manage notification templates', 'Send campaign',
         ],
         'Reports' => [
-            'View reports', 'Export reports',
+            'View reports', 'Export reports', 'View all branches',
         ],
     ];
 
@@ -156,7 +156,7 @@ class PermissionCatalog
                 'View dashboard', 'View audit log',
                 'View customer', 'View order', 'View inventory', 'View project', 'View style', 'View product', 'View costing',
                 'View payment', 'Record payment', 'Approve refund', 'Manage invoice', 'Manage expense', 'View financial reports',
-                'View reports', 'Export reports',
+                'View reports', 'Export reports', 'View all branches',
             ],
         ],
         self::CUSTOMER_ROLE => [

@@ -4,9 +4,7 @@
     replace its href with the real route and drop the badge.
 --}}
 @php
-    $soon = [
-        ['perm' => 'View reports',     'icon' => 'ri-bar-chart-box-line',   'label' => 'Reports'],
-    ];
+    $soon = [];   // every SRS module is now built
     $u = auth()->user();
     $ent = app(\App\Services\Billing\Entitlements::class);
     $locked = fn (string $feature) => $currentTenant && ! $ent->has($currentTenant, $feature);
@@ -25,7 +23,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project') || $u->can('View reports'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -95,8 +93,8 @@
     </li>
     @endif
 
-    @if($u->can('View order') || $u->can('View payment') || $u->can('Manage quotation'))
-    @php $oActive = request()->routeIs('orders.*', 'quotations.*', 'invoices.*', 'payments.*', 'refunds.*'); @endphp
+    @if($u->can('View order') || $u->can('View payment') || $u->can('Manage quotation') || $u->can('Manage expense'))
+    @php $oActive = request()->routeIs('orders.*', 'quotations.*', 'invoices.*', 'payments.*', 'refunds.*', 'expenses.*'); @endphp
     <li class="nav-item">
         <a class="nav-link menu-link collapsed {{ $oActive ? 'active' : '' }}" href="#sidebarOrders" data-bs-toggle="collapse" role="button"
            aria-expanded="{{ $oActive ? 'true' : 'false' }}" aria-controls="sidebarOrders">
@@ -110,6 +108,9 @@
                 <li class="nav-item"><a href="{{ route('invoices.index') }}" class="nav-link {{ request()->routeIs('invoices.*') ? 'active' : '' }}">Invoices</a></li>
                 <li class="nav-item"><a href="{{ route('payments.index') }}" class="nav-link {{ request()->routeIs('payments.*', 'refunds.*') ? 'active' : '' }}">Payments</a></li>
                 @endcan
+                @if($u->can('Manage expense') || $u->can('View financial reports'))
+                <li class="nav-item"><a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">Expenses</a></li>
+                @endif
             </ul>
         </div>
     </li>
@@ -176,6 +177,14 @@
                 <li class="nav-item"><a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">Suppliers</a></li>
             </ul>
         </div>
+    </li>
+    @endcan
+
+    @can('View reports')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
+            <i class="ri-bar-chart-box-line"></i> <span>Reports</span>
+        </a>
     </li>
     @endcan
 

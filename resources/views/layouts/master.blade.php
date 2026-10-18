@@ -999,6 +999,13 @@
         @can('View project')
         {title:'Weddings & projects',    url:'{{ route("projects.index") }}',          icon:'mdi-heart',          category:'Projects',         keywords:['wedding','project','event','aso-ebi','uniform','bulk','group','bridesmaid']},
         @endcan
+        @can('View reports')
+        {title:'Reports',                url:'{{ route("reports.index") }}',           icon:'mdi-chart-box',      category:'Reports',          keywords:['report','sales','profit','loss','receivables','owed','debtors','stock value','valuation','analytics','export']},
+        {title:'Sales & money collected', url:'{{ route("reports.show", "sales") }}',   icon:'mdi-cash-multiple',  category:'Reports',          keywords:['sales report','collections','takings','revenue','income']},
+        {title:'Money owed (receivables)', url:'{{ route("reports.show", "receivables") }}', icon:'mdi-hand-coin',  category:'Reports',          keywords:['owing','debt','balance','aging','outstanding']},
+        {title:'Profit & loss',          url:'{{ route("reports.show", "profit") }}',  icon:'mdi-chart-line',     category:'Reports',          keywords:['profit','loss','p&l','margin']},
+        @endcan
+        @if(Route::has('expenses.index'))@if(auth()->user()?->can('Manage expense') || auth()->user()?->can('View financial reports')){title:'Expenses',               url:'{{ route("expenses.index") }}',          icon:'mdi-cash-minus',     category:'Money',            keywords:['expense','rent','salary','diesel','fuel','cost','spend']},@endif @endif
         @can('Manage project')
         {title:'New project',            url:'{{ route("projects.create") }}',         icon:'mdi-heart-plus',     category:'Projects',         keywords:['new','wedding','project','event']},
         @endcan

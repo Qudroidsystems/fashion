@@ -18,6 +18,11 @@ class QualityCheck extends Model
 
     protected $casts = ['results' => 'array'];
 
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewer_id');

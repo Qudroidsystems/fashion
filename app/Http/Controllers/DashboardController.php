@@ -10,9 +10,10 @@ use App\Support\Tenancy\CurrentTenant;
 use Illuminate\View\View;
 
 /**
- * Fashion house home. For now: account health, set-up checklist and the
- * module roadmap from the SRS. Business KPIs (sales, collections, order
- * pipeline, low stock, workload — FR-REP-001) are added as modules land.
+ * Fashion house home (SRS FR-REP-001): money collected and owed, the order
+ * pipeline with what is due or late, workroom load, low stock and follow-ups —
+ * each shown only to people allowed to see it — plus the set-up checklist
+ * until it is done.
  */
 class DashboardController extends Controller
 {
@@ -66,24 +67,9 @@ class DashboardController extends Controller
             'checklist' => $checklist,
             'recent'    => $recent,
             'birthdays' => $birthdays,
-            'modules'   => $this->modules(),
+            'figures'   => (new \App\Services\Reports\DashboardFigures(auth()->user()))->all(),
+            'reports'   => auth()->user()->can('View reports')
+                ? collect(app(\App\Services\Reports\ReportRegistry::class)->visibleTo(auth()->user()))->take(6) : collect(),
         ]);
-    }
-
-    /** SRS roadmap modules, in build order (§16). */
-    protected function modules(): array
-    {
-        return [
-            ['icon' => 'ri-user-heart-line',      'name' => 'Customers (CRM)',        'phase' => 2, 'desc' => 'Customer profiles, preferences, consent, follow-ups and timeline.', 'route' => 'customers.index'],
-            ['icon' => 'ri-ruler-2-line',         'name' => 'Measurements',           'phase' => 2, 'desc' => 'Versioned templates, staff capture, approval, comparison and secure request links.', 'route' => 'measurements.index'],
-            ['icon' => 'ri-t-shirt-air-line',     'name' => 'Styles & Catalogue',     'phase' => 3, 'desc' => 'Style catalogue, versions and ready-made products.', 'route' => 'styles.index'],
-            ['icon' => 'ri-archive-line',         'name' => 'Inventory & Purchasing', 'phase' => 3, 'desc' => 'Fabric and accessories, suppliers, purchase orders and the stock ledger.', 'route' => 'inventory.index'],
-            ['icon' => 'ri-file-list-3-line',     'name' => 'Orders & Quotes',        'phase' => 4, 'desc' => 'Quotations, garment lines, invoices, deposits and balances.', 'route' => 'orders.index'],
-            ['icon' => 'ri-shopping-cart-2-line', 'name' => 'POS & Payments',         'phase' => 4, 'desc' => 'Ready-made sales, cashier shifts, receipts, returns and Paystack links.', 'route' => 'pos.terminal'],
-            ['icon' => 'ri-scissors-cut-line',    'name' => 'Production',             'phase' => 5, 'desc' => 'Task board, fittings, quality checks, alterations and delivery.', 'route' => 'production.board'],
-            ['icon' => 'ri-heart-2-line',         'name' => 'Weddings & Bulk Projects','phase' => 5, 'desc' => 'Participants, per-garment tracking, milestones and client progress pages.', 'route' => 'projects.index'],
-            ['icon' => 'ri-notification-badge-line','name' => 'Notifications & Apps', 'phase' => 6, 'desc' => 'Reminders, SMS / e-mail / WhatsApp, staff and customer mobile apps.'],
-            ['icon' => 'ri-bar-chart-box-line',   'name' => 'Reports',                'phase' => 7, 'desc' => 'Sales, receivables, stock valuation, throughput and project profitability.'],
-        ];
     }
 }

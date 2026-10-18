@@ -178,6 +178,19 @@ Artisan::command('fhmp:delivery-risk', function () {
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:delivery-risk')->dailyAt('07:15');
 
+/* Scheduled reports: Monday-morning summary of last week to owners and finance staff (once per house per week). */
+Artisan::command('fhmp:weekly-summary {tenant? : slug; all houses when omitted} {--force : send again even if sent this week}', function () {
+    $n = 0;
+    \App\Models\Tenant::whereIn('status', config('tenancy.usable_statuses'))
+        ->when($this->argument('tenant'), fn ($q, $slug) => $q->where('slug', $slug))
+        ->each(function ($tenant) use (&$n) {
+            $n += app(\App\Services\Reports\WeeklySummary::class)->sendFor($tenant, (bool) $this->option('force'));
+        });
+    $this->info("Weekly summary sent to {$n} person(s).");
+})->purpose('E-mail last week\'s figures to owners and finance staff');
+
+\Illuminate\Support\Facades\Schedule::command('fhmp:weekly-summary')->weeklyOn(1, '07:30')->timezone(config('app.timezone'));
+
 /*
 | Scheduled jobs (birthdays, measurement reviews, fittings, overdue payments…)
 | are registered here with Schedule::command(...) as the modules land.

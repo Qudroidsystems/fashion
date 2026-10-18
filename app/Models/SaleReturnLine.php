@@ -14,6 +14,11 @@ class SaleReturnLine extends Model
 
     protected $casts = ['quantity' => 'float', 'amount' => 'float'];
 
+    public function saleReturn(): BelongsTo
+    {
+        return $this->belongsTo(SaleReturn::class);
+    }
+
     public function saleLine(): BelongsTo
     {
         return $this->belongsTo(SaleLine::class);
