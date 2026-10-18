@@ -45,6 +45,11 @@ class PermissionMeta
     /** Exact-name overrides for permissions the generic rule can't phrase well. */
     protected const OVERRIDES = [
         'View dashboard'                => ['View',    'Open the fashion house dashboard.'],
+        'View reports'                  => ['View',    'Open reports; each report also needs the permission for what it shows (money, orders, stock…).'],
+        'Export reports'                => ['Export',  'Download reports as PDF, Excel or CSV — exactly what the person can see on screen.'],
+        'View all branches'             => ['View',    'See reports and dashboard figures for every branch, not just the person\'s own branch.'],
+        'View financial reports'        => ['View',    'See money reports: sales, profit and loss, expenses and money owed.'],
+        'Manage expense'                => ['Manage',  'Record house running costs (rent, salaries, power…), correct them the same day and void them with a reason.'],
         'Update user-role'              => ['Assign',  'Add or remove staff in a role.'],
         'Manage tenant settings'        => ['Manage',  'Change the fashion house profile, branding, currency and timezone.'],
         'View customer sensitive notes' => ['View',    'See private customer notes and other sensitive details.'],

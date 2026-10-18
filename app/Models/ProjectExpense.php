@@ -15,6 +15,11 @@ class ProjectExpense extends Model
 
     protected $casts = ['amount' => 'float', 'spent_on' => 'date'];
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function recorder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');

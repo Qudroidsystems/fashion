@@ -137,9 +137,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/projects/{project}/milestones/{milestone}/publish', [ProjectController::class, 'publishMilestone'])->name('projects.milestones.publish');
             Route::post('/projects/{project}/updates', [ProjectController::class, 'storeUpdate'])->middleware('idempotent')->name('projects.updates.store');
 
-            /*
-            | Further module endpoints (reports, …) go here.
-            */
+            // Reports (SRS §8.2) — same permissions, plan and branch limits as the screens.
+            Route::get('/reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports/{report}', [\App\Http\Controllers\Api\V1\ReportController::class, 'show'])->name('reports.show');
         });
     });
 });

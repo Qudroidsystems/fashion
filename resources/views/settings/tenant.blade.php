@@ -141,6 +141,11 @@
                     </div>
                 </x-cb.card>
 
+                <x-cb.card title="Reports" icon="ri-bar-chart-box-line" class="mt-3">
+                    <label class="d-flex gap-2"><input type="hidden" name="weekly_summary" value="0"><input type="checkbox" name="weekly_summary" value="1" @checked(old('weekly_summary', $tenant->setting('reports.weekly_summary', true)))> Send a weekly summary every Monday morning</label>
+                    <div class="form-text">Last week's money collected, sales earned, expenses, orders and what is owed — e-mailed to the owner and to staff who can see financial reports, each for the branches they may see.</div>
+                </x-cb.card>
+
                 @php $ps = $tenant->setting('paystack', []); @endphp
                 <x-cb.card title="Online payments (Paystack)" icon="ri-secure-payment-line" class="mt-3" id="paystack">
                     <p class="small text-muted">Customers can pay deposits and balances by card or bank transfer through a link you send them. Payments are confirmed only after Paystack verifies them. Get your keys from your Paystack dashboard → Settings → API keys &amp; webhooks.</p>
