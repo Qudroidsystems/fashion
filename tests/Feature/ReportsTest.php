@@ -240,3 +240,47 @@ it('sends a Monday summary of last week once, to the owner and finance staff onl
     $this->house->forceFill(['settings' => ['reports' => ['weekly_summary' => false]]])->save();
     expect(CurrentTenant::run($this->house, fn () => app(WeeklySummary::class)->sendFor($this->house->fresh(), true)))->toBe(0);
 });
+
+it('lets the admin pick any date range, or all time, and print it', function () {
+    $tz = $this->house->timezone ?: config('app.timezone');
+    $old = bookedOrder($this, 60000, paid: 20000);
+    $new = bookedOrder($this, 90000, paid: 40000);
+    // The first order and its payment happened back in March.
+    CurrentTenant::run($this->house, function () use ($old, $tz) {
+        $march = now($tz)->setDate(now($tz)->year, 3, 10)->setTime(12, 0)->utc();
+        $old->forceFill(['confirmed_at' => $march, 'created_at' => $march])->save();
+        \App\Models\Payment::whereHas('allocations', fn ($q) => $q->where('order_id', $old->id))->update(['received_at' => $march]);
+    });
+    $this->actingAs($this->owner);
+    $year = now($tz)->year;
+
+    // Any range: just March, then everything from 1 Jan to today.
+    $this->get("/reports/sales?period=custom&from={$year}-03-01&to={$year}-03-31")->assertOk()
+        ->assertSee("1 Mar – 31 Mar {$year}")->assertSee('₦20,000')->assertDontSee('₦60,000');
+    $res = $this->get("/reports/sales?period=custom&from={$year}-01-01&to=" . houseToday($this))->assertOk()->assertSee('₦60,000');
+
+    // Dates typed over a quick pick win; a reversed range is put the right way round.
+    $f = CurrentTenant::run($this->house, fn () => ReportFilters::make(['period' => 'this_month', 'from' => "{$year}-03-01", 'to' => "{$year}-03-31"], $this->owner));
+    expect($f->preset)->toBe('custom')->and($f->fromDate())->toBe("{$year}-03-01");
+    $f = CurrentTenant::run($this->house, fn () => ReportFilters::make(['period' => 'custom', 'from' => "{$year}-03-31", 'to' => "{$year}-03-01"], $this->owner));
+    expect($f->fromDate())->toBe("{$year}-03-01")->and($f->toDate())->toBe("{$year}-03-31");
+
+    // All time starts with the house's earliest record.
+    $this->get('/reports/sales?period=all')->assertOk()->assertSee('All time (since 10 Mar')->assertSee('₦60,000');
+
+    // Money owed: all time by default; dates pick which orders are counted (balances still as of now).
+    $this->get('/reports/receivables')->assertOk()->assertSee($old->number)->assertSee($new->number);
+    $this->get("/reports/receivables?period=custom&from={$year}-03-01&to={$year}-03-31")->assertOk()
+        ->assertSee($old->number)->assertDontSee($new->number)->assertSee('orders and invoices dated');
+
+    // Print opens the same report as a PDF in the browser (no "Export reports" needed); exports keep the range.
+    $pdf = $this->get("/reports/sales/print?period=custom&from={$year}-03-01&to={$year}-03-31")->assertOk()->assertHeader('content-type', 'application/pdf');
+    expect($pdf->headers->get('content-disposition'))->toStartWith('inline');
+    $csv = $this->get("/reports/sales/export/csv?period=custom&from={$year}-03-01&to={$year}-03-31")->streamedContent();
+    expect($csv)->toContain("Period: 1 Mar – 31 Mar {$year}")->toContain('"Money collected",20000');
+
+    $designer = addStaff($this->house, 'Designer');
+    CurrentTenant::run($this->house, fn () => $designer->givePermissionTo(['View reports']));
+    $this->actingAs($designer)->get('/reports/orders/print')->assertOk();
+    $this->get('/reports/orders/export/pdf')->assertForbidden();
+});

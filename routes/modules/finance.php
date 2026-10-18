@@ -16,4 +16,5 @@ Route::get('/expenses/{expense}/receipt', [ExpenseController::class, 'receipt'])
 
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 Route::get('/reports/{report}', [ReportController::class, 'show'])->name('reports.show');
+Route::get('/reports/{report}/print', [ReportController::class, 'print'])->name('reports.print');
 Route::get('/reports/{report}/export/{format}', [ReportController::class, 'export'])->whereIn('format', ['csv', 'xlsx', 'pdf'])->name('reports.export');

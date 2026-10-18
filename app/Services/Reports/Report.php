@@ -56,10 +56,30 @@ abstract class Report
         return 'this_month';
     }
 
-    /** Label for the "as of" reports that ignore the range. */
+    /**
+     * True for reports whose figures are balances right now (money owed, projects);
+     * their date range only picks which orders or events are included.
+     */
     public function asOf(): bool
     {
         return ! in_array('range', $this->filters(), true);
+    }
+
+    /** What the date range selects, for as-of reports ("orders dated", "events on"). */
+    public function rangeNoun(): string
+    {
+        return 'dated';
+    }
+
+    /** The period in words, for the screen, exports and API. */
+    public function periodText(ReportFilters $f): string
+    {
+        if (! $this->asOf()) {
+            return $f->label();
+        }
+        $now = 'As of ' . now($f->tz)->format('j M Y, H:i');
+
+        return $f->allTime || ! in_array('range', $this->filters(), true) ? $now : $now . ' · ' . $this->rangeNoun() . ' ' . $f->label();
     }
 
     public function staffOptions(): array

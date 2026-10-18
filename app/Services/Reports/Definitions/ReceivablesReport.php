@@ -45,7 +45,23 @@ class ReceivablesReport extends Report
 
     public function filters(): array
     {
-        return ['branch', 'staff'];
+        return ['range', 'branch', 'staff'];
+    }
+
+    public function defaultPeriod(): string
+    {
+        return 'all';
+    }
+
+    /** Balances are always today's; the dates pick which orders (by confirmation) and invoices (by issue date) are counted. */
+    public function asOf(): bool
+    {
+        return true;
+    }
+
+    public function rangeNoun(): string
+    {
+        return 'orders and invoices dated';
     }
 
     public function run(ReportFilters $f, User $user): ReportResult
@@ -54,6 +70,7 @@ class ReceivablesReport extends Report
         $orders = Order::whereIn('status', array_merge(OrderStatus::OPEN, ['delivered', 'closed']))
             ->when($f->branchId, fn ($q) => $q->where('branch_id', $f->branchId))
             ->when($f->staffId, fn ($q) => $q->where('owner_id', $f->staffId))
+            ->when(! $f->allTime, fn ($q) => $q->whereBetween('confirmed_at', [$f->fromUtc(), $f->toUtc()]))
             ->with('customer:id,public_id,first_name,last_name,phone', 'owner:id,name')
             ->get(['id', 'public_id', 'number', 'customer_id', 'owner_id', 'status', 'total', 'confirmed_at', 'promised_date', 'delivered_at']);
 
@@ -87,7 +104,7 @@ class ReceivablesReport extends Report
 
         // Stand-alone invoices (no order): age from the due date, else the issue date.
         if (! $f->branchId && ! $f->staffId) {
-            $invoices = Invoice::where('status', 'issued')->whereNull('order_id')->with('customer:id,public_id,first_name,last_name,phone')->get();
+            $invoices = Invoice::where('status', 'issued')->whereNull('order_id')->when(! $f->allTime, fn ($q) => $q->whereBetween('issue_date', $f->dateRange()))->with('customer:id,public_id,first_name,last_name,phone')->get();
             $invPaid = PaymentAllocation::whereIn('invoice_id', $invoices->pluck('id'))->selectRaw('invoice_id, sum(amount) amt')->groupBy('invoice_id')->pluck('amt', 'invoice_id');
             foreach ($invoices as $i) {
                 $balance = round((float) $i->total - (float) ($invPaid[$i->id] ?? 0), 2);
@@ -148,7 +165,7 @@ class ReceivablesReport extends Report
             ['key' => 'balance', 'label' => 'Owed', 'format' => 'money'], ['key' => 'owner', 'label' => 'Order owner'],
         ], $rows, true, null, 'Nobody owes the house anything.');
 
-        $r->note('As of now. Orders count from the day they were confirmed; stand-alone invoices from their due date.')
+        $r->note('Balances are as of now. Pick dates to see only orders confirmed (and stand-alone invoices issued) in that period. Age counts from the day an order was confirmed, or an invoice\'s due date.')
           ->note('Draft and cancelled orders are left out. Deposits still to be paid on confirmed orders are included.');
 
         return $r;

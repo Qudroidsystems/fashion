@@ -80,7 +80,7 @@ class DashboardFigures
             $out['deposits'] = $month->depositsHeld();
         }
         // Owed: the receivables report's own figures (its first two cards).
-        $rec = app(ReceivablesReport::class)->run(ReportFilters::make([], $this->user), $this->user);
+        $rec = app(ReceivablesReport::class)->run(ReportFilters::make(['period' => 'all'], $this->user), $this->user);
         $out['owed'] = $rec->cards[0]['value'];
         $out['owed_hint'] = $rec->cards[0]['hint'];
         $out['handed_unpaid'] = $rec->cards[1]['value'];

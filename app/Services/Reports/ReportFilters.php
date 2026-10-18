@@ -18,8 +18,14 @@ class ReportFilters
     public const PRESETS = [
         'today' => 'Today', 'yesterday' => 'Yesterday', 'this_week' => 'This week', 'last_week' => 'Last week',
         'this_month' => 'This month', 'last_month' => 'Last month', 'last_30' => 'Last 30 days', 'this_quarter' => 'This quarter',
-        'last_quarter' => 'Last quarter', 'this_year' => 'This year', 'last_year' => 'Last year', 'custom' => 'Pick dates',
+        'last_quarter' => 'Last quarter', 'this_year' => 'This year', 'last_year' => 'Last year', 'all' => 'All time', 'custom' => 'Pick dates',
     ];
+
+    /** The quick-pick buttons above the date boxes (the rest stay in the API / links). */
+    public const QUICK = ['today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_quarter', 'this_year', 'last_year', 'all'];
+
+    /** Longest range a report covers (except "All time", which starts when the house joined). */
+    public const MAX_YEARS = 10;
 
     public string $tz;
     public string $preset;
@@ -31,6 +37,7 @@ class ReportFilters
     public ?string $category = null;
     public ?string $status = null;
     public string $group = 'day';
+    public bool $allTime = false;
 
     public static function make(array $input, ?User $user = null, string $defaultPreset = 'this_month'): self
     {
@@ -50,14 +57,21 @@ class ReportFilters
             'last_quarter' => [$now->subQuarterNoOverflow()->startOfQuarter(), $now->subQuarterNoOverflow()->endOfQuarter()],
             'this_year'    => [$now->startOfYear(), $now],
             'last_year'    => [$now->subYear()->startOfYear(), $now->subYear()->endOfYear()],
+            'all'          => [self::houseStart($f->tz, $now), $now],
             'custom'       => [self::date($input['from'] ?? null, $f->tz) ?? $now->startOfMonth(), self::date($input['to'] ?? null, $f->tz) ?? $now],
             default        => [$now->startOfMonth(), $now],
         };
+        // Dates typed into the From/To boxes win over a quick pick they no longer match.
+        if ($f->preset !== 'custom' && ($typedFrom = self::date($input['from'] ?? null, $f->tz)) && ($typedTo = self::date($input['to'] ?? null, $f->tz))
+            && ($typedFrom->toDateString() !== $from->toDateString() || $typedTo->toDateString() !== $to->toDateString())) {
+            [$f->preset, $from, $to] = ['custom', $typedFrom, $typedTo];
+        }
         if ($from->gt($to)) {
             [$from, $to] = [$to, $from];
         }
-        if ($from->diffInDays($to) > 3 * 366) {   // keep heavy reports bounded
-            $from = $to->subYears(3);
+        $f->allTime = $f->preset === 'all';
+        if (! $f->allTime && $from->diffInDays($to) > self::MAX_YEARS * 366) {   // keep heavy reports bounded
+            $from = $to->subYears(self::MAX_YEARS);
         }
         $f->from = $from->startOfDay();
         $f->to = $to->endOfDay();
@@ -90,6 +104,19 @@ class ReportFilters
         }
 
         return CurrentTenant::membership()?->branch_id;
+    }
+
+    /** When the house's records begin: the day it joined (or its earliest order, if older data was brought in). */
+    protected static function houseStart(string $tz, CarbonImmutable $now): CarbonImmutable
+    {
+        $tenant = CurrentTenant::get();
+        $first = collect([
+            $tenant?->created_at,
+            \App\Models\Order::min('created_at'),
+            \App\Models\Payment::min('received_at'),
+        ])->filter()->map(fn ($d) => CarbonImmutable::parse($d, 'UTC')->setTimezone($tz))->min();
+
+        return $first && $first->lt($now) ? $first->startOfDay() : $now->startOfMonth();
     }
 
     protected static function date(?string $value, string $tz): ?CarbonImmutable
@@ -132,6 +159,9 @@ class ReportFilters
 
     public function label(): string
     {
+        if ($this->allTime) {
+            return 'All time (since ' . $this->from->format('j M Y') . ')';
+        }
         if ($this->fromDate() === $this->toDate()) {
             return $this->from->format('j M Y');
         }
