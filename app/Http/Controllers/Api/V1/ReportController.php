@@ -45,7 +45,7 @@ class ReportController extends Controller
         return response()->json([
             'report' => ['key' => $def->key(), 'title' => $def->title()],
             'filters' => [
-                'period' => $f->preset, 'from' => $f->fromDate(), 'to' => $f->toDate(), 'label' => $def->asOf() ? 'As of now' : $f->label(),
+                'period' => $f->preset, 'from' => $f->fromDate(), 'to' => $f->toDate(), 'label' => $def->periodText($f), 'all_time' => $f->allTime,
                 'branch_id' => $f->branchId, 'branch_locked' => $f->branchLocked, 'staff_id' => $f->staffId, 'category' => $f->category, 'status' => $f->status,
                 'timezone' => $f->tz,
             ],

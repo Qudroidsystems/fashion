@@ -15,6 +15,7 @@
 
     <x-cb.hero :title="$report->title()" :icon="$report->icon()" :subtitle="$report->description()" :back="route('reports.index')" back-label="All reports">
         <x-slot:actions>
+            @unless($lock)<a href="{{ route('reports.print', [$report->key()] + $q) }}" target="_blank" rel="noopener" class="cb-hero-btn"><i class="ri-printer-line me-1"></i>Print</a>@endunless
             @if($canExport)
                 <div class="dropdown">
                     <button class="cb-hero-btn dropdown-toggle" data-bs-toggle="dropdown" type="button"><i class="ri-download-2-line me-1"></i>Export</button>
@@ -31,7 +32,7 @@
             @endif
         </x-slot:actions>
         <x-slot:pills>
-            <span class="cb-meta-pill"><i class="ri-calendar-line me-1"></i>{{ $report->asOf() ? 'As of now' : $f->label() }}</span>
+            <span class="cb-meta-pill"><i class="ri-calendar-line me-1"></i>{{ $report->periodText($f) }}</span>
             @foreach($labels as $k => $v)<span class="cb-meta-pill">{{ $k }}: {{ $v }}</span>@endforeach
             @if($f->branchLocked)<span class="cb-meta-pill"><i class="ri-git-branch-line me-1"></i>Your branch only</span>@endif
         </x-slot:pills>
@@ -39,7 +40,13 @@
     @include('inventory.partials.flash')
 
     <style>
-        .rep-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .rep-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .rep-quick { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+        .rep-quick a { font-size: .78rem; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--cb-border); color: var(--cb-text); text-decoration: none; background: var(--cb-surface); white-space: nowrap; }
+        .rep-quick a:hover { border-color: var(--cb-teal); color: var(--cb-teal); }
+        .rep-quick a.on { background: var(--cb-teal); border-color: var(--cb-teal); color: #fff; font-weight: 600; }
+        .rep-date { display: flex; flex-direction: column; gap: 3px; margin: 0; }
+        .rep-date span { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--cb-muted); }
         .rep-table td.num, .rep-table th.num { text-align: right; white-space: nowrap; }
         .rep-table tr.strong td { font-weight: 700; border-top: 1px solid var(--cb-border); }
         .rep-table tr.indent td:first-child { padding-left: 2.2rem; color: var(--cb-muted); }
@@ -55,6 +62,7 @@
         @media (max-width: 575px) { .cb-stat .stat-value { font-size: 1.15rem; white-space: nowrap; } }
         @media (max-width: 767px) {
             .rep-filters > * { flex: 1 1 45%; } .rep-filters .action-btn { flex-basis: 100%; justify-content: center; }
+            .rep-filters > .rep-quick { flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; } .rep-date input { width: 100%; }
             .rep-table.stack tfoot tr { display: block; padding: 6px 0; }
             .rep-table.stack tfoot td { display: flex; justify-content: space-between; border: none; padding: 7px 16px; }
             .rep-table.stack tfoot td:empty { display: none; }
@@ -68,13 +76,15 @@
     <form method="GET" class="cb-card mb-3" id="repFilters">
         <div class="cb-card-body rep-filters">
             @if($options['presets'])
-                <select name="period" class="cb-select" id="repPeriod" aria-label="Period">
-                    @foreach($options['presets'] as $k => $v)<option value="{{ $k }}" @selected($f->preset === $k)>{{ $v }}</option>@endforeach
-                </select>
-                <span id="repDates" class="d-flex gap-2 align-items-center {{ $f->preset === 'custom' ? '' : 'd-none' }}">
-                    <input type="date" name="from" class="cb-select" value="{{ $f->fromDate() }}" aria-label="From"> <span class="text-muted">to</span>
-                    <input type="date" name="to" class="cb-select" value="{{ $f->toDate() }}" aria-label="To">
-                </span>
+                <div class="rep-quick w-100" role="group" aria-label="Quick periods">
+                    @foreach(\App\Services\Reports\ReportFilters::QUICK as $k)
+                        <a href="{{ route('reports.show', [$report->key(), 'period' => $k] + array_diff_key($q, array_flip(['period', 'from', 'to']))) }}"
+                           class="{{ $f->preset === $k ? 'on' : '' }}">{{ $options['presets'][$k] }}</a>
+                    @endforeach
+                </div>
+                <input type="hidden" name="period" value="{{ $f->preset }}">
+                <label class="rep-date"><span>From</span><input type="date" name="from" class="cb-select" value="{{ $f->fromDate() }}" max="{{ $f->toDate() }}" required></label>
+                <label class="rep-date"><span>To</span><input type="date" name="to" class="cb-select" value="{{ $f->toDate() }}" min="{{ $f->fromDate() }}" required></label>
             @endif
             @if($options['branches'])
                 <select name="branch" class="cb-select" aria-label="Branch"><option value="">All branches</option>
@@ -92,7 +102,10 @@
                 <select name="status" class="cb-select" aria-label="Stage"><option value="">Any stage</option>
                     @foreach($options['status'] as $k => $v)<option value="{{ $k }}" @selected((string) $f->status === (string) $k)>{{ $v }}</option>@endforeach</select>
             @endif
-            <button class="action-btn btn-primary-cb ms-md-auto"><i class="ri-filter-3-line"></i>Show</button>
+            <button class="action-btn btn-primary-cb ms-md-auto"><i class="ri-filter-3-line"></i>Show report</button>
+            @if($options['presets'] && $report->asOf())
+                <div class="w-100 small text-muted"><i class="ri-information-line me-1"></i>Amounts are always as of now; the dates choose which {{ $report->rangeNoun() === 'events on' ? 'projects (by event date)' : 'orders and invoices' }} are included. “All time” includes everything.</div>
+            @endif
         </div>
     </form>
     @endif
@@ -179,12 +192,11 @@
 @push('scripts')
 <script>
     (function () {
-        var p = document.getElementById('repPeriod');
-        if (p) p.addEventListener('change', function () {
-            var custom = this.value === 'custom';
-            document.getElementById('repDates').classList.toggle('d-none', ! custom);
-            if (! custom) this.form.submit();
-        });
+        var from = document.querySelector('#repFilters [name=from]'), to = document.querySelector('#repFilters [name=to]');
+        if (from && to) {
+            from.addEventListener('change', function () { to.min = from.value; });
+            to.addEventListener('change', function () { from.max = to.value; });
+        }
         document.querySelectorAll('#repFilters select:not(#repPeriod)').forEach(function (s) { s.addEventListener('change', function () { this.form.submit(); }); });
     })();
 </script>

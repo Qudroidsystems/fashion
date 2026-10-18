@@ -55,7 +55,22 @@ class ProjectsReport extends Report
 
     public function filters(): array
     {
-        return ['branch', 'staff', 'status'];
+        return ['range', 'branch', 'staff', 'status'];
+    }
+
+    public function defaultPeriod(): string
+    {
+        return 'all';
+    }
+
+    public function asOf(): bool
+    {
+        return true;
+    }
+
+    public function rangeNoun(): string
+    {
+        return 'events on';
     }
 
     public function statusOptions(): array
@@ -72,6 +87,8 @@ class ProjectsReport extends Report
 
         // As of now: every project (upcoming ones matter most), soonest event first.
         $projects = Project::visibleTo($user)
+            ->when(! $f->allTime, fn ($q) => $q->where(fn ($w) => $w->whereBetween('event_date', $f->dateRange())
+                ->orWhere(fn ($n) => $n->whereNull('event_date')->whereBetween('created_at', [$f->fromUtc(), $f->toUtc()]))))
             ->when($f->branchId, fn ($q) => $q->where('branch_id', $f->branchId))
             ->when($f->staffId, fn ($q) => $q->where('manager_id', $f->staffId))
             ->when($f->status === 'open', fn ($q) => $q->whereIn('status', ['planning', 'active']))
@@ -150,7 +167,7 @@ class ProjectsReport extends Report
             ], $costRows, true, 'Actual cost = material issued to the project\'s orders + project expenses. Labour counts only when recorded as an expense.', 'No projects in this period.');
         }
 
-        $r->note('As of now, soonest event first. Cancelled projects are left out unless you pick that stage.')
+        $r->note('Money and readiness are as of now, soonest event first. Pick dates to see only projects whose event falls in that period (or, without an event date, that were created then). Cancelled projects are left out unless you pick that stage.')
           ->note('Red rows: the event is within 14 days and not every garment is ready. Amber: a milestone is past its date.');
         if (! $money) {
             $r->note('Money columns are shown to people who can view payments.');

@@ -75,7 +75,7 @@ class ReportController extends Controller
         $tenant = CurrentTenant::require();
         $labels = $this->filterLabels($def, $f);
 
-        AuditLogger::log('report.exported', null, after: ['report' => $def->key(), 'format' => $format, 'period' => $f->label()] + $labels,
+        AuditLogger::log('report.exported', null, after: ['report' => $def->key(), 'format' => $format, 'period' => $def->periodText($f)] + $labels,
             description: $def->title() . ' exported as ' . strtoupper($format));
 
         return match ($format) {
@@ -83,6 +83,19 @@ class ReportController extends Controller
             'xlsx' => $this->exporter->xlsx($def, $f, $result, $tenant, $labels),
             default => $this->exporter->pdf($def, $f, $result, $tenant, $labels),
         };
+    }
+
+    /** Print: the same PDF, opened in the browser instead of downloaded. Anyone who can see the report may print it. */
+    public function print(Request $request, string $report): Response
+    {
+        $def = $this->find($request, $report);
+        abort_if($def->lockedBy(), 403, 'This report is not included in your plan.');
+        $f = ReportFilters::fromRequest($request, $def->defaultPeriod());
+        $labels = $this->filterLabels($def, $f);
+        AuditLogger::log('report.printed', null, after: ['report' => $def->key(), 'period' => $def->periodText($f)] + $labels,
+            description: $def->title() . ' printed');
+
+        return $this->exporter->pdf($def, $f, $def->run($f, $request->user()), CurrentTenant::require(), $labels, inline: true);
     }
 
     protected function find(Request $request, string $key): Report

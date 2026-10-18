@@ -29,7 +29,7 @@ class WeeklySummary
         $to = $from->endOfWeek();
         $f = ReportFilters::make(['period' => 'custom', 'from' => $from->toDateString(), 'to' => $to->toDateString()], $user);
         $facts = new FinanceFacts($f);
-        $rec = app(ReceivablesReport::class)->run(ReportFilters::make([], $user), $user);
+        $rec = app(ReceivablesReport::class)->run(ReportFilters::make(['period' => 'all'], $user), $user);
         $orders = Order::query()->when($f->branchId, fn ($q) => $q->where('branch_id', $f->branchId));
 
         return [

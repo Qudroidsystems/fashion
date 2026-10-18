@@ -1,0 +1,14 @@
+0b386019c8dc82f9bfe248671741c540  README.md
+d69b42ec28df37373974f854a6bca864  app/Http/Controllers/Api/V1/ReportController.php
+ee71060e6654ada2e2b6205388df702a  app/Http/Controllers/Reports/ReportController.php
+5eba2c977f8c73fcba9e4091a5afb229  app/Services/Reports/DashboardFigures.php
+9fd13102884aca6925e64e82a418f808  app/Services/Reports/Definitions/ProjectsReport.php
+86d5886c0f34bc83481ce3a42649fbf7  app/Services/Reports/Definitions/ReceivablesReport.php
+c5476192e4f03714e16b84529363d9af  app/Services/Reports/Report.php
+0971275b9740ab28d78fbbcba4aaaf8c  app/Services/Reports/ReportExporter.php
+cef7be7f1921102f6bab60125f7de41f  app/Services/Reports/ReportFilters.php
+745dd213689b99a34ddfdca5aa2cc04e  app/Services/Reports/WeeklySummary.php
+58491abfa767c1b2eabaea1bf370c03c  resources/views/reports/pdf.blade.php
+ba79fda0b1ccf98d2485321ac2d44733  resources/views/reports/show.blade.php
+52011478429ed800506ab782e3123ed3  routes/modules/finance.php
+b963eb124744239b4788021614f19748  tests/Feature/ReportsTest.php

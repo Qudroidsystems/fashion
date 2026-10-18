@@ -44,7 +44,7 @@
         </td>
         <td style="text-align:right">
             <h1>{{ $report->title() }}</h1>
-            <div>{{ $report->asOf() ? 'As of ' . now($f->tz)->format('j M Y, H:i') : $f->label() }}</div>
+            <div>{{ $report->periodText($f) }}</div>
             @foreach($filterLabels as $k => $v)<div class="muted">{{ $k }}: {{ $v }}</div>@endforeach
         </td>
     </tr></table>

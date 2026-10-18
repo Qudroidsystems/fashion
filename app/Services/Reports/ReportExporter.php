@@ -26,7 +26,7 @@ class ReportExporter
     /** Header lines every export starts with. */
     public function heading(Report $report, ReportFilters $f, Tenant $tenant, array $filterLabels): array
     {
-        $lines = [[$tenant->name . ' — ' . $report->title()], [$report->asOf() ? 'As of ' . now($f->tz)->format('j M Y, H:i') : 'Period: ' . $f->label()]];
+        $lines = [[$tenant->name . ' — ' . $report->title()], [($report->asOf() ? '' : 'Period: ') . $report->periodText($f)]];
         foreach ($filterLabels as $k => $v) {
             $lines[] = [$k . ': ' . $v];
         }
@@ -149,7 +149,7 @@ class ReportExporter
         }, $this->filename($report, $f, 'xlsx'), ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
     }
 
-    public function pdf(Report $report, ReportFilters $f, ReportResult $result, Tenant $tenant, array $filterLabels): Response
+    public function pdf(Report $report, ReportFilters $f, ReportResult $result, Tenant $tenant, array $filterLabels, bool $inline = false): Response
     {
         $wide = collect($result->tables)->max(fn ($t) => count($t['columns'])) > 6;
         $logo = null;
@@ -159,9 +159,11 @@ class ReportExporter
             $logo = in_array($mime, ['image/png', 'image/jpeg', 'image/gif'], true) ? 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file)) : null;
         }
 
-        return Pdf::loadView('reports.pdf', [
+        $pdf = Pdf::loadView('reports.pdf', [
             'report' => $report, 'f' => $f, 'result' => $result, 'tenant' => $tenant, 'filterLabels' => $filterLabels, 'logo' => $logo,
-        ])->setOption('isFontSubsettingEnabled', true)->setPaper('a4', $wide ? 'landscape' : 'portrait')->download($this->filename($report, $f, 'pdf'));
+        ])->setOption('isFontSubsettingEnabled', true)->setPaper('a4', $wide ? 'landscape' : 'portrait');
+
+        return $inline ? $pdf->stream($this->filename($report, $f, 'pdf')) : $pdf->download($this->filename($report, $f, 'pdf'));
     }
 
     /** Keep spreadsheet apps from running text that looks like a formula. */
