@@ -143,14 +143,6 @@ Artisan::command('fhmp:verify-payments', function () {
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:verify-payments')->everyFifteenMinutes();
 
-/* Add the starter production workflows and checklist to houses that have none. */
-Artisan::command('fhmp:production-kit {tenant? : slug; all houses when omitted}', function (\App\Services\Production\ProductionStarterKit $kit) {
-    \App\Models\Tenant::query()->when($this->argument('tenant'), fn ($q, $slug) => $q->where('slug', $slug))
-        ->each(function ($tenant) use ($kit) {
-            $kit->install($tenant);
-            $this->line("  production workflows ready for {$tenant->name}");
-        });
-})->purpose('Install the starter production workflows and quality checklist');
 
 /* FR-PRD-005 / §10: send fitting reminders that are due (cancelled or moved fittings are skipped). */
 Artisan::command('fhmp:fitting-reminders', function () {
@@ -209,3 +201,40 @@ Artisan::command('fhmp:store-expire', function () {
 })->purpose('Release stock held by unpaid online orders');
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:store-expire')->everyFifteenMinutes()->withoutOverlapping();
+
+/*
+| Reset someone's password from the server (e.g. the first admin forgot it).
+| The new password is typed at a hidden prompt — never passed on the command line,
+| so it doesn't end up in shell history. Other devices are signed out.
+|   php artisan fhmp:reset-password admin@fashionhouse.test
+*/
+Artisan::command('fhmp:reset-password {email : the account\'s e-mail or username} {--force-change : make them choose a new password at next sign-in}', function () {
+    $login = $this->argument('email');
+    $user = \App\Models\User::where('email', $login)->orWhere('username', $login)->first();
+    if (! $user) {
+        $this->error("No account with the e-mail or username “{$login}”.");
+
+        return 1;
+    }
+    $password = (string) $this->secret("New password for {$user->name} ({$user->email})");
+    if (mb_strlen($password) < 8) {
+        $this->error('Use at least 8 characters.');
+
+        return 1;
+    }
+    if ($password !== (string) $this->secret('Type it again')) {
+        $this->error('The two passwords don’t match. Nothing was changed.');
+
+        return 1;
+    }
+    $user->forceFill([
+        'password' => \Illuminate\Support\Facades\Hash::make($password),
+        'must_change_password' => (bool) $this->option('force-change'),
+        'is_disabled' => false,
+    ])->save();
+    $user->tokens()->delete();   // sign out the apps
+    \App\Services\Audit\AuditLogger::log('profile.password_reset_cli', $user, description: 'Password reset from the server console', userId: $user->id);
+    $this->info("Password changed for {$user->email}. Sign in on the website or the app with the new password.");
+
+    return 0;
+})->purpose('Set a new password for an account (prompts; nothing in shell history)');
