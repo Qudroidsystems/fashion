@@ -115,7 +115,14 @@ class ProductionController extends Controller
             'scheduled_at'     => 'required|date',          // house local time, e.g. 2026-10-20 14:30
             'duration_minutes' => 'nullable|integer|min:10|max:480',
             'notes'            => 'nullable|string|max:1000',
+            'reschedule'       => 'nullable|string',               // move this booked fitting instead of adding one
         ]);
+        if (! empty($data['reschedule'])) {
+            $old = Fitting::where('public_id', $data['reschedule'])->orWhere('number', $data['reschedule'])->firstOrFail();
+            $new = $this->fittings->reschedule($old, $data['scheduled_at'], $data['notes'] ?? null, $request->user());
+
+            return response()->json(['success' => true, 'data' => $this->fittingData($new->fresh())], 201);
+        }
         $order = ! empty($data['order']) ? $this->order($data['order']) : null;
         $customerId = $order?->customer_id ?? \App\Models\Customer::where('public_id', $data['customer'])->orWhere('customer_number', $data['customer'])->value('id');
         $fitting = $this->fittings->schedule([
@@ -245,7 +252,8 @@ class ProductionController extends Controller
         return [
             'id' => $f->public_id, 'number' => $f->number, 'status' => $f->status, 'outcome' => $f->outcome,
             'scheduled_at' => $f->scheduled_at->timezone($tz)->toIso8601String(), 'duration_minutes' => $f->duration_minutes,
-            'order' => $f->order?->number, 'customer' => $f->customer?->name,
+            'order' => $f->order?->number, 'order_id' => $f->order?->public_id, 'customer' => $f->customer?->name,
+            'line' => $f->order_line_id, 'garment' => $f->line?->description,
             'reminders' => $f->reminders()->where('status', 'pending')->orderBy('remind_at')->get()->map(fn ($r) => $r->remind_at->timezone($tz)->toIso8601String()),
         ];
     }

@@ -199,6 +199,13 @@ LANDING_CONTACT_PHONE=
 | GET/POST | `/api/v1/projects` · GET `/api/v1/projects/{id}` | create with `customer` (public id or number), `type`, dates, `contract_amount`; detail includes people, garments, milestones, and money/costs when allowed |
 | POST | `/api/v1/projects/{id}/participants` · `/garments` · `/milestones` · `/milestones/{mid}/publish` · `/updates` | participants one at a time or `people: [...]`; garments `{participants:[ids], style\|sku\|description, options, quantity}`; updates `publish=true` needs *Publish project update* |
 | GET  | `/api/v1/public/project-tracking/{token}` | no login — the client's view: published milestones and updates, garment counts |
+| GET  | `/api/v1/dashboard` | staff-app home: money (collected today/month, 14-day chart, owed, deposits, earned), orders (open, due this week, late, pipeline, due soon), my work, fittings today, workroom load, low stock, my follow-ups — same permissions, plan and branch limits as the web dashboard |
+| GET  | `/api/v1/staff` | people in the house (id, name, job title, roles) for assigning fittings and work |
+| GET  | `/api/v1/fittings` | `from`, `to` (house dates, max 62 days), optional `status` (comma list); moved/cancelled ones hidden by default. `POST /fittings` also takes `reschedule` = a booked fitting's id to move it |
+| GET/POST | `/api/v1/notifications` · `/notifications/{id}/read` · `/notifications/read-all` | the current house's bell; `meta.unread`; each item has a `target` (`order` / `customer` / `task` / `item` + id) when its link points at one |
+| GET  | `/api/v1/quotations/{id}` | one quotation with its lines |
+
+`GET /api/v1/orders/{id}` also returns `next_statuses`, `can_cancel`, `risk_level`, `risk_reasons`, notes, `fittings` and (with *View payment*) `invoices` and `payments`. `GET /api/v1/tenants/current` returns `lookups` (payment methods, handover confirmations, alteration parties and cost treatments, project and item types, order status labels and transitions) so the app never guesses the server's codes. Measurement values carry their `label`. The staff app lives in the Flutter project `fhmp_staff`.
 
 Errors: `{ success:false, code, message, field_errors?, correlation_id }`. Every response
 carries `X-Request-Id`.

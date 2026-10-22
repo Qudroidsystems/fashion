@@ -34,7 +34,7 @@ class OrderController extends Controller
 {
     public function __construct(protected OrderService $orders, protected BillingService $billing)
     {
-        $this->middleware('permission:Manage quotation', ['only' => ['quotations', 'storeQuotation', 'accept']]);
+        $this->middleware('permission:Manage quotation', ['only' => ['quotations', 'quotation', 'storeQuotation', 'accept']]);
         $this->middleware('permission:View order', ['only' => ['index', 'show']]);
         $this->middleware('permission:Create order', ['only' => ['store', 'accept']]);
         $this->middleware('permission:Update order', ['only' => ['update', 'statusEvent']]);
@@ -62,6 +62,12 @@ class OrderController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $this->quoteData($q->fresh('lines', 'customer'), true)], 201);
+    }
+
+    /** GET /quotations/{id} — one quotation with its lines. */
+    public function quotation(Quotation $quotation): JsonResponse
+    {
+        return response()->json(['success' => true, 'data' => $this->quoteData($quotation->load('lines', 'customer'), true)]);
     }
 
     public function accept(Request $request, Quotation $quotation): JsonResponse
@@ -282,7 +288,7 @@ class OrderController extends Controller
         return [
             'id' => $l->id, 'kind' => $l->kind, 'description' => $l->description, 'quantity' => $l->quantity,
             'style_version_id' => $l->style_version_id, 'options' => collect($l->options)->pluck('label'),
-            'instructions' => $l->instructions, 'status' => $l->status ?? null,
+            'instructions' => $l->instructions, 'status' => $l->status ?? null, 'wearer' => $l->wearer ?? null,
             'measurement_session_id' => $l->measurementSession?->public_id ?? null,
         ] + ($money ? ['unit_price' => $l->unit_price, 'discount' => $l->discount, 'line_total' => $l->line_total] : []);
     }
@@ -305,6 +311,42 @@ class OrderController extends Controller
             if ($o->relationLoaded('events')) {
                 $out['events'] = $o->events->map(fn ($e) => ['status' => $e->to_status, 'note' => $e->note, 'customer_visible' => $e->customer_visible, 'at' => $e->created_at->toIso8601String()]);
             }
+            $out += $this->orderExtras($o, $request, $money);
+        }
+
+        return $out;
+    }
+
+    /** Detail-only extras for the staff app: what to do next, risk, money documents, fittings. */
+    protected function orderExtras(Order $o, Request $request, bool $money): array
+    {
+        $tz = CurrentTenant::get()->timezone ?: config('app.timezone');
+        $out = [
+            'next_statuses'  => OrderStatus::TRANSITIONS[$o->status] ?? [],
+            'can_cancel'     => in_array($o->status, OrderStatus::CANCELLABLE, true),
+            'risk_level'     => $o->risk_level,
+            'risk_reasons'   => collect($o->risk_reasons ?? [])->map(fn ($r) => is_array($r) ? ($r['text'] ?? $r['reason'] ?? $r['label'] ?? implode(' ', array_filter($r, 'is_string'))) : (string) $r)
+                ->filter()->values(),
+            'customer_notes' => $o->customer_notes,
+            'internal_notes' => $o->internal_notes,
+            'fittings'       => $o->fittings()->with('line:id,description')->whereNotIn('status', ['rescheduled'])->get()->map(fn ($f) => [
+                'id' => $f->public_id, 'number' => $f->number, 'status' => $f->status, 'outcome' => $f->outcome,
+                'scheduled_at' => $f->scheduled_at->copy()->timezone($tz)->toIso8601String(), 'duration_minutes' => $f->duration_minutes,
+                'line' => $f->order_line_id, 'garment' => $f->line?->description, 'order' => $o->number, 'order_id' => $o->public_id,
+                'customer' => $o->customer?->name,
+            ])->values(),
+        ];
+        if ($money) {
+            $out['invoices'] = $o->invoices()->latest('id')->get()->map(fn ($i) => [
+                'id' => $i->public_id, 'number' => $i->number, 'kind' => $i->kind, 'status' => $i->status,
+                'total' => $i->total, 'balance' => $i->balance(), 'due_date' => $i->due_date?->toDateString(),
+            ])->values();
+            $out['payments'] = Payment::whereHas('allocations', fn ($q) => $q->where('order_id', $o->id)
+                ->orWhereIn('invoice_id', Invoice::where('order_id', $o->id)->select('id')))
+                ->latest('received_at')->limit(50)->get()->map(fn ($p) => [
+                    'id' => $p->public_id, 'number' => $p->number, 'amount' => $p->amount, 'method' => $p->method,
+                    'reference' => $p->reference, 'status' => $p->status, 'received_at' => $p->received_at?->toIso8601String(),
+                ])->values();
         }
 
         return $out;

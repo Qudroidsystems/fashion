@@ -295,6 +295,7 @@ class MeasurementController extends Controller
     {
         return [
             'code'             => $v->parameter_code,
+            'label'            => $v->templateParameter?->label ?? $v->parameter_code,
             'side'             => $v->side,
             'value_mm'         => $v->value_mm !== null ? (float) $v->value_mm : null,
             'value'            => $v->value_mm !== null ? (float) Units::format($v->value_mm, $unit) : ($v->number_value !== null ? (float) $v->number_value : $v->text_value),
