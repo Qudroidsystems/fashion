@@ -290,3 +290,50 @@ it('opens every back-office screen and manages pictures, prices, zones, banners 
         $this->get(SHOP . $url)->assertOk();
     }
 });
+
+it('lets shoppers sign up and sign in with Google through the platform callback', function () {
+    config(['services.google.client_id' => 'gid', 'services.google.client_secret' => 'gsecret', 'app.url' => 'http://localhost']);
+    $this->get(SHOP . '/account/login')->assertOk()->assertSee('Sign in with Google')->assertSee('/account/google', false);
+    $this->get(SHOP . '/account/register')->assertOk()->assertSee('Sign up with Google');
+
+    // Start on the shop → Google, with the platform's one callback address.
+    $r = $this->get(SHOP . '/account/google?next=checkout')->assertRedirect();
+    $to = $r->headers->get('Location');
+    expect($to)->toStartWith('https://accounts.google.com/')->toContain(rawurlencode('http://localhost/shop-auth/google/callback'));
+    parse_str(parse_url($to, PHP_URL_QUERY), $q);
+
+    $profile = ['sub' => 'g-123', 'email' => 'Amaka@Gmail.com', 'email_verified' => true,
+        'given_name' => 'Amaka', 'family_name' => 'Obi', 'picture' => 'https://lh3.googleusercontent.com/a.png'];
+    Http::fake([
+        'oauth2.googleapis.com/*' => Http::response(['access_token' => 'at']),
+        'openidconnect.googleapis.com/*' => function () use (&$profile) { return Http::response($profile); },
+    ]);
+    $back = $this->get('http://localhost/shop-auth/google/callback?state=' . $q['state'] . '&code=abc')->assertRedirect();
+    $finish = $back->headers->get('Location');
+    expect($finish)->toStartWith(SHOP . '/account/google/finish?ticket=');
+
+    // A bad or replayed ticket is refused; the real one creates the account and signs in.
+    $this->get(SHOP . '/account/google/finish?ticket=' . str_repeat('x', 48))->assertRedirect(SHOP . '/account/login');
+    $r = $this->get(SHOP . '/account/google?next=checkout');   // new browser nonce for this attempt
+    parse_str(parse_url($r->headers->get('Location'), PHP_URL_QUERY), $q);
+    $finish = $this->get('http://localhost/shop-auth/google/callback?state=' . $q['state'] . '&code=abc')->headers->get('Location');
+    $this->get($finish)->assertRedirect(SHOP . '/checkout');
+    $acc = inShop($this, fn () => \App\Models\StoreAccount::first());
+    expect($acc->email)->toBe('amaka@gmail.com')->and($acc->google_id)->toBe('g-123')->and($acc->first_name)->toBe('Amaka');
+    $this->get(SHOP . '/account')->assertOk()->assertSee('Amaka');
+    $this->get($finish)->assertRedirect(SHOP . '/account/login');   // tickets work once
+
+    // Another house's shop never sees this shopper.
+    [$other] = makeHouse('Other House');
+    expect(\App\Models\StoreAccount::withoutTenantScope()->where('tenant_id', $other->id)->count())->toBe(0);
+
+    // Existing e-mail account: linked, not duplicated.
+    $this->post(SHOP . '/account/logout');
+    inShop($this, fn () => \App\Models\StoreAccount::create(['first_name' => 'Ife', 'email' => 'ife@example.com', 'password' => 'secret123', 'status' => 'active']));
+    $profile = ['sub' => 'g-999', 'email' => 'ife@example.com', 'email_verified' => true, 'given_name' => 'Ife'];
+    $r = $this->get(SHOP . '/account/google');
+    parse_str(parse_url($r->headers->get('Location'), PHP_URL_QUERY), $q);
+    $this->get($this->get('http://localhost/shop-auth/google/callback?state=' . $q['state'] . '&code=x')->headers->get('Location'))->assertRedirect(SHOP . '/account');
+    expect(inShop($this, fn () => \App\Models\StoreAccount::where('email', 'ife@example.com')->count()))->toBe(1)
+        ->and(inShop($this, fn () => \App\Models\StoreAccount::where('email', 'ife@example.com')->value('google_id')))->toBe('g-999');
+});

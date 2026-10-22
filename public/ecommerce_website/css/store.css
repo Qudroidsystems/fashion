@@ -136,3 +136,9 @@
 .js-mini-items .store-mini-qty { flex: 0 0 auto; width: auto; }
 .js-mini-items .store-mini-qty button { color: var(--main); font-size: 18px; line-height: 1; padding: 0; display: inline-grid; place-items: center; cursor: pointer; }
 .js-mini-items .store-mini-qty button:disabled { opacity: .3; cursor: not-allowed; }
+
+/* Continue with Google (shopper accounts) */
+.store-google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--main); font-weight: 600; text-decoration: none; transition: background .2s, border-color .2s; }
+.store-google-btn:hover { background: var(--surface); border-color: #c9c9c9; color: var(--main); }
+.store-or { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--secondary-2); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.store-or::before, .store-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }

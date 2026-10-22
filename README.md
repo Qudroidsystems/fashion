@@ -90,6 +90,8 @@ Then, as the owner: **Settings › Website** (switch on) → **Online Store › 
 
 **Shoppers**: home (banners, categories, new/best/sale), shop with filters (category, size, colour, price, in stock, on sale) and sorting, product pages (gallery per colour, size/colour picker with live stock, “only N left”, reviews, share, *Order on WhatsApp*), slide-out basket, basket page with coupons and free-delivery progress, checkout (delivery by state with zone fees, or pickup at a branch), wishlist, accounts (orders, addresses, password reset), guest order tracking by number + phone/e-mail, and a private order page (link in e-mails and WhatsApp) to pay, upload a transfer receipt or cancel.
 
+**Google sign-in for shoppers**: with `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` set (the same Google client as staff sign-in), the shop's *Sign in* and *Create an account* pages show *Continue with Google*. In Google Cloud › Credentials add a second authorised redirect URI: `{APP_URL}/shop-auth/google/callback`. Every house's shop (subdomain, `/s/{slug}` or own domain) goes through that one address and is sent back to its own shop with a one-time ticket that only works for that house and that browser. A Google sign-in with the e-mail of an existing shop account links to it; otherwise a new account is created for that house only.
+
 **Paying**
 
 | Method | How it works |

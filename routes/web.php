@@ -68,6 +68,8 @@ $siteRoutes = function (string $prefix) {
     Route::get('/account/register', [$acc, 'registerForm'])->name($prefix . 'account.register');
     Route::post('/account/register', [$acc, 'register'])->middleware('throttle:10,1')->name($prefix . 'account.register.post');
     Route::post('/account/logout', [$acc, 'logout'])->name($prefix . 'account.logout');
+    Route::get('/account/google', [$acc, 'google'])->middleware('throttle:20,1')->name($prefix . 'account.google');
+    Route::get('/account/google/finish', [$acc, 'googleFinish'])->middleware('throttle:20,1')->name($prefix . 'account.google.finish');
     Route::get('/account/forgot', [$acc, 'forgotForm'])->name($prefix . 'account.forgot');
     Route::post('/account/forgot', [$acc, 'forgot'])->middleware('throttle:5,1')->name($prefix . 'account.forgot.post');
     Route::get('/account/reset/{token}', [$acc, 'resetForm'])->where('token', '[A-Za-z0-9]{64}')->name($prefix . 'account.reset');
@@ -114,6 +116,8 @@ Auth::routes(['verify' => true]);
 // Sign in / sign up with Google, and finishing a new account (its fashion house).
 Route::get('/auth/google', [\App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->middleware('throttle:20,1')->name('auth.google');
 Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'callback'])->middleware('throttle:20,1')->name('auth.google.callback');
+// Shoppers on every house shop come back from Google here (one fixed redirect URI for all shops).
+Route::get('/shop-auth/google/callback', [\App\Http\Controllers\Sites\ShopGoogleController::class, 'callback'])->middleware('throttle:30,1')->name('shop.google.callback');
 Route::get('/welcome', [\App\Http\Controllers\Auth\OnboardingController::class, 'show'])->name('onboarding.show');
 Route::post('/welcome', [\App\Http\Controllers\Auth\OnboardingController::class, 'store'])->name('onboarding.store');
 
