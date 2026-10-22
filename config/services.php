@@ -69,6 +69,9 @@ return [
         // Shoppers on the house shops all come back through one address on the platform
         // (house sites live on many subdomains/domains, Google needs fixed redirect URIs).
         'shop_redirect' => env('GOOGLE_SHOP_REDIRECT_URI'),   // defaults to {APP_URL}/shop-auth/google/callback
+        // Staff app (Google sign-in on the phone): every OAuth client id whose ID tokens the API accepts —
+        // the Web client id above is always accepted; add the iOS and Android client ids here, comma-separated.
+        'mobile_client_ids' => array_values(array_filter(array_map('trim', explode(',', (string) env('GOOGLE_MOBILE_CLIENT_IDS', ''))))),
     ],
 
 ];

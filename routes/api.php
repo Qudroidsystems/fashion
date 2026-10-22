@@ -26,6 +26,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::post('/auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:10,1')->name('auth.login');
+    Route::post('/auth/google', [AuthController::class, 'google'])
+        ->middleware('throttle:10,1')->name('auth.google');
 
     // Client project tracking for the customer app — no login, published content only (FR-PRJ-006).
     Route::get('/public/project-tracking/{token}', [ProjectController::class, 'tracking'])
@@ -38,6 +40,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
             Route::post('/auth/password', [AuthController::class, 'password'])->name('auth.password');
             Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
+            Route::get('/auth/onboarding', [AuthController::class, 'onboardingOptions'])->name('auth.onboarding.show');
+            Route::post('/auth/onboarding', [AuthController::class, 'onboarding'])->middleware('throttle:5,1')->name('auth.onboarding');
         });
 
         // Everything below runs inside a fashion house.
