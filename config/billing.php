@@ -46,6 +46,7 @@ return [
         'export'            => ['customers.export'],
         'website'           => ['website.edit', 'website.update', 'site-enquiries.*'],
         'custom_domain'     => ['website.domain-check'],
+        'online_store'      => ['store.*'],
     ],
     'block_reads' => ['export'],
 ];

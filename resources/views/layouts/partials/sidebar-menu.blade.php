@@ -116,6 +116,36 @@
     </li>
     @endif
 
+    @if($u->can('View online orders') || $u->can('Manage store products') || $u->can('Manage online store'))
+    @php
+        $stActive = request()->routeIs('store.*');
+        $stNew = $u->can('View online orders') && ! $locked('online_store') ? \App\Models\ShopOrder::where(fn ($q) => $q->where('status', 'awaiting_confirmation')->orWhere('payment_status', 'pending'))->where('status', '!=', 'cancelled')->count() : 0;
+    @endphp
+    <li class="nav-item">
+        <a class="nav-link menu-link collapsed {{ $stActive ? 'active' : '' }}" href="#sidebarStore" data-bs-toggle="collapse" role="button"
+           aria-expanded="{{ $stActive ? 'true' : 'false' }}" aria-controls="sidebarStore">
+            <i class="ri-store-3-line"></i> <span>Online Store</span>@if($locked('online_store'))<i class="ri-lock-line ms-1 small opacity-75" title="Not in your plan — open to see, upgrade to use"></i>@elseif($stNew)<span class="badge rounded-pill bg-danger ms-auto">{{ $stNew }}</span>@endif
+        </a>
+        <div class="collapse menu-dropdown {{ $stActive ? 'show' : '' }}" id="sidebarStore">
+            <ul class="nav nav-sm flex-column">
+                @can('View online orders')
+                <li class="nav-item"><a href="{{ route('store.dashboard') }}" class="nav-link {{ request()->routeIs('store.dashboard') ? 'active' : '' }}">Overview</a></li>
+                <li class="nav-item"><a href="{{ route('store.orders.index') }}" class="nav-link {{ request()->routeIs('store.orders.*') ? 'active' : '' }}">Orders @if($stNew)<span class="badge rounded-pill bg-danger ms-1">{{ $stNew }}</span>@endif</a></li>
+                @endcan
+                @can('Manage online orders')<li class="nav-item"><a href="{{ route('store.orders.create') }}" class="nav-link {{ request()->routeIs('store.orders.create') ? 'active' : '' }}">Take a WhatsApp order</a></li>@endcan
+                @can('View product')<li class="nav-item"><a href="{{ route('store.products.index') }}" class="nav-link {{ request()->routeIs('store.products.*') ? 'active' : '' }}">Products & pictures</a></li>@endcan
+                @can('Manage online store')
+                <li class="nav-item"><a href="{{ route('store.coupons.index') }}" class="nav-link {{ request()->routeIs('store.coupons.*') ? 'active' : '' }}">Coupons</a></li>
+                <li class="nav-item"><a href="{{ route('store.shipping.index') }}" class="nav-link {{ request()->routeIs('store.shipping.*') ? 'active' : '' }}">Delivery zones</a></li>
+                <li class="nav-item"><a href="{{ route('store.banners.index') }}" class="nav-link {{ request()->routeIs('store.banners.*') ? 'active' : '' }}">Banners</a></li>
+                @endcan
+                @can('Moderate reviews')<li class="nav-item"><a href="{{ route('store.reviews.index') }}" class="nav-link {{ request()->routeIs('store.reviews.*') ? 'active' : '' }}">Reviews</a></li>@endcan
+                @can('Manage online store')<li class="nav-item"><a href="{{ route('store.settings.edit') }}" class="nav-link {{ request()->routeIs('store.settings.*') ? 'active' : '' }}">Shop settings</a></li>@endcan
+            </ul>
+        </div>
+    </li>
+    @endif
+
     @can('View project')
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->routeIs('projects.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">

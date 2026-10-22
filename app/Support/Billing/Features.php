@@ -17,6 +17,7 @@ class Features
         'online_payments'   => 'Online payments with your Paystack account',
         'mobile_app'        => 'Staff mobile app',
         'website'           => 'Your own website on a subdomain',
+        'online_store'      => 'Online shop: cart, checkout, card, transfer and WhatsApp orders',
         'projects'          => 'Weddings, events and group orders',
         'purchasing'        => 'Suppliers and purchase orders',
         'custom_workflows'  => 'Your own production stages and quality checklists',

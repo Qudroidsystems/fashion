@@ -33,7 +33,10 @@ class ProductService
             }
 
             if (($removeImage || $image) && $product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
+                // Keep the file when it is also in the shop gallery.
+                if (! \App\Models\ProductImage::where('path', $product->image_path)->exists()) {
+                    Storage::disk('public')->delete($product->image_path);
+                }
                 $product->image_path = null;
             }
             $product->save();

@@ -71,6 +71,10 @@ class OnlinePaymentService
         if ($intent->status === 'succeeded') {
             return $intent;
         }
+        if ($intent->shop_order_id) {
+            // An online-shop checkout: the shop records it against its order (and accepts the order).
+            return app(\App\Services\Store\StorePaymentService::class)->confirm($intent);
+        }
         $gateway = PaystackGateway::for(CurrentTenant::require());
         $data = $gateway->verify($intent->reference);
         $status = $data['status'] ?? 'unknown';

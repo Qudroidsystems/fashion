@@ -30,9 +30,54 @@ $siteRoutes = function (string $prefix) {
     Route::get('/', [$c, 'home'])->name($prefix . 'home');
     Route::get('/collection', [$c, 'collection'])->name($prefix . 'collection');
     Route::get('/collection/{style}', [$c, 'style'])->name($prefix . 'style');
-    Route::get('/shop', [$c, 'shop'])->name($prefix . 'shop');
     Route::get('/contact', [$c, 'contact'])->name($prefix . 'contact');
     Route::post('/contact', [$c, 'enquire'])->middleware('throttle:10,1')->name($prefix . 'enquire');
+
+    // Online shop
+    $shop = \App\Http\Controllers\Sites\ShopController::class;
+    Route::get('/shop', [$shop, 'index'])->name($prefix . 'shop');
+    Route::get('/product/{slug}', [$shop, 'show'])->where('slug', '[A-Za-z0-9\-]+')->name($prefix . 'product');
+    Route::post('/product/{slug}/review', [$shop, 'review'])->where('slug', '[A-Za-z0-9\-]+')->middleware('throttle:5,10')->name($prefix . 'review');
+    Route::get('/wishlist', [$shop, 'wishlist'])->name($prefix . 'wishlist');
+    Route::post('/wishlist', [$shop, 'toggleWishlist'])->middleware('throttle:60,1')->name($prefix . 'wishlist.toggle');
+    Route::get('/pages/{page}', [$shop, 'policy'])->name($prefix . 'policy');
+    Route::match(['get', 'post'], '/track', [$shop, 'track'])->middleware('throttle:20,1')->name($prefix . 'track');
+
+    $cart = \App\Http\Controllers\Sites\CartController::class;
+    Route::get('/cart', [$cart, 'show'])->name($prefix . 'cart');
+    Route::get('/cart/mini', [$cart, 'mini'])->name($prefix . 'cart.mini');
+    Route::post('/cart/add', [$cart, 'add'])->middleware('throttle:60,1')->name($prefix . 'cart.add');
+    Route::post('/cart/update', [$cart, 'update'])->middleware('throttle:120,1')->name($prefix . 'cart.update');
+    Route::post('/cart/remove', [$cart, 'remove'])->name($prefix . 'cart.remove');
+    Route::post('/cart/coupon', [$cart, 'coupon'])->middleware('throttle:20,1')->name($prefix . 'cart.coupon');
+
+    $co = \App\Http\Controllers\Sites\CheckoutController::class;
+    Route::get('/checkout', [$co, 'show'])->name($prefix . 'checkout');
+    Route::post('/checkout/quote', [$co, 'quote'])->middleware('throttle:60,1')->name($prefix . 'checkout.quote');
+    Route::post('/checkout', [$co, 'place'])->middleware('throttle:10,1')->name($prefix . 'checkout.place');
+    Route::get('/checkout/paystack', [$co, 'paystackReturn'])->middleware('throttle:30,1')->name($prefix . 'checkout.paystack');
+    Route::get('/checkout/stripe', [$co, 'stripeReturn'])->middleware('throttle:30,1')->name($prefix . 'checkout.stripe');
+    Route::get('/order/{token}', [$co, 'order'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:60,1')->name($prefix . 'order');
+    Route::post('/order/{token}/pay', [$co, 'pay'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name($prefix . 'order.pay');
+    Route::post('/order/{token}/proof', [$co, 'proof'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1')->name($prefix . 'order.proof');
+    Route::post('/order/{token}/cancel', [$co, 'cancel'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:5,1')->name($prefix . 'order.cancel');
+
+    $acc = \App\Http\Controllers\Sites\AccountController::class;
+    Route::get('/account/login', [$acc, 'loginForm'])->name($prefix . 'account.login');
+    Route::post('/account/login', [$acc, 'login'])->middleware('throttle:20,1')->name($prefix . 'account.login.post');
+    Route::get('/account/register', [$acc, 'registerForm'])->name($prefix . 'account.register');
+    Route::post('/account/register', [$acc, 'register'])->middleware('throttle:10,1')->name($prefix . 'account.register.post');
+    Route::post('/account/logout', [$acc, 'logout'])->name($prefix . 'account.logout');
+    Route::get('/account/forgot', [$acc, 'forgotForm'])->name($prefix . 'account.forgot');
+    Route::post('/account/forgot', [$acc, 'forgot'])->middleware('throttle:5,1')->name($prefix . 'account.forgot.post');
+    Route::get('/account/reset/{token}', [$acc, 'resetForm'])->where('token', '[A-Za-z0-9]{64}')->name($prefix . 'account.reset');
+    Route::post('/account/reset/{token}', [$acc, 'reset'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:10,1')->name($prefix . 'account.reset.post');
+    Route::get('/account', [$acc, 'dashboard'])->name($prefix . 'account');
+    Route::put('/account', [$acc, 'update'])->name($prefix . 'account.update');
+    Route::get('/account/orders', [$acc, 'orders'])->name($prefix . 'account.orders');
+    Route::get('/account/addresses', [$acc, 'addresses'])->name($prefix . 'account.addresses');
+    Route::post('/account/addresses', [$acc, 'saveAddress'])->name($prefix . 'account.addresses.save');
+    Route::delete('/account/addresses/{address}', [$acc, 'deleteAddress'])->whereNumber('address')->name($prefix . 'account.addresses.delete');
 };
 if ($sitesDomain = config('sites.domain')) {
     // Reserved labels (www, app, the platform's own subdomain…) never match, so those hosts keep the normal pages.
@@ -41,9 +86,20 @@ if ($sitesDomain = config('sites.domain')) {
 }
 Route::prefix('s/{site}')->where(['site' => '[a-z0-9][a-z0-9-]*'])->group(fn () => $siteRoutes('sitepath.'));
 
+// Single-house installation with STORE_SINGLE_ROOT=true: the house's site and shop answer at the root of APP_URL.
+$singleRoot = config('tenancy.mode') === 'single' && config('store.single_root') && config('tenancy.default_tenant');
+if ($singleRoot) {
+    $siteRoutes('root.');
+    foreach (Route::getRoutes()->getRoutes() as $r) {
+        if (str_starts_with((string) $r->getName(), 'root.')) {
+            $r->defaults('site', config('tenancy.default_tenant'));
+        }
+    }
+}
+
 // Public landing page, for everyone. Signed-in users see "Open dashboard" instead of "Sign in";
 // logging in still lands on /dashboard (LoginController::$redirectTo).
-Route::get('/', fn () => view('landing', [
+if (! $singleRoot) Route::get('/', fn () => view('landing', [
     'siteName'   => config('landing.brand') ?: config('app.name', 'Fashion House Platform'),
     'mobile'     => array_merge(['android_url' => null, 'ios_url' => null, 'is_demo' => true], (array) config('landing.app', [])),
     'signedIn'   => Auth::check(),
@@ -90,6 +146,8 @@ Route::post('/webhooks/billing/paystack', [\App\Http\Controllers\Billing\Billing
 Route::get('/t/{token}', [\App\Http\Controllers\Projects\TrackingController::class, 'show'])
     ->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1')->name('projects.track');
 
+Route::post('/webhooks/stripe/{tenant}', \App\Http\Controllers\Payments\StripeWebhookController::class)
+    ->where('tenant', '[0-9A-Za-z]{26}')->middleware('throttle:120,1')->name('webhooks.stripe');
 Route::post('/webhooks/paystack/{tenant}', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'webhook'])
     ->where('tenant', '[0-9A-Za-z]{26}')->middleware('throttle:120,1')->name('webhooks.paystack');
 Route::get('/pay/return', [\App\Http\Controllers\Payments\PublicPaymentController::class, 'return'])->middleware('throttle:30,1')->name('pay.return');
@@ -158,6 +216,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/production.php';
     require __DIR__ . '/modules/projects.php';
     require __DIR__ . '/modules/finance.php';
+    require __DIR__ . '/modules/store.php';
 
     // House website (settings and the enquiries it receives)
     Route::get('/website', [\App\Http\Controllers\Sites\WebsiteController::class, 'edit'])->name('website.edit');

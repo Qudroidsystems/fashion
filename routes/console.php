@@ -196,3 +196,16 @@ Artisan::command('fhmp:weekly-summary {tenant? : slug; all houses when omitted} 
 | are registered here with Schedule::command(...) as the modules land.
 | They must run per tenant, in the tenant's timezone (SRS FR-NOT-006).
 */
+
+/* Online shop: cancel unpaid checkouts whose stock hold ran out (card payments are checked with the provider first). */
+Artisan::command('fhmp:store-expire', function () {
+    $n = 0;
+    \App\Models\Tenant::whereIn('status', config('tenancy.usable_statuses'))->each(function ($tenant) use (&$n) {
+        \App\Support\Tenancy\CurrentTenant::run($tenant, function () use (&$n) {
+            $n += app(\App\Services\Store\ShopOrderService::class)->expireStale();
+        });
+    });
+    $this->info("{$n} unpaid online order(s) cancelled and their stock released.");
+})->purpose('Release stock held by unpaid online orders');
+
+\Illuminate\Support\Facades\Schedule::command('fhmp:store-expire')->everyFifteenMinutes()->withoutOverlapping();

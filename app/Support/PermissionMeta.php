@@ -45,6 +45,12 @@ class PermissionMeta
     /** Exact-name overrides for permissions the generic rule can't phrase well. */
     protected const OVERRIDES = [
         'View dashboard'                => ['View',    'Open the fashion house dashboard.'],
+        'View online orders'            => ['View',    'See orders placed on the online shop or through WhatsApp, with the customer\'s details.'],
+        'Manage online orders'          => ['Manage',  'Accept, edit, pack, ship, deliver and cancel online and WhatsApp orders, and take new WhatsApp orders.'],
+        'Confirm online payment'        => ['Approve', 'Confirm bank transfers and other payments for online orders (records the payment).'],
+        'Manage store products'         => ['Manage',  'Upload product pictures and edit online prices, sale prices, descriptions and visibility in the shop.'],
+        'Manage online store'           => ['Manage',  'Shop settings: payment methods and keys, bank details, WhatsApp, delivery zones, coupons and banners.'],
+        'Moderate reviews'              => ['Approve', 'Approve, hide and reply to product reviews.'],
         'View reports'                  => ['View',    'Open reports; each report also needs the permission for what it shows (money, orders, stock…).'],
         'Export reports'                => ['Export',  'Download reports as PDF, Excel or CSV — exactly what the person can see on screen.'],
         'View all branches'             => ['View',    'See reports and dashboard figures for every branch, not just the person\'s own branch.'],

@@ -980,6 +980,18 @@
         @can('View product')
         {title:'Ready-made Products',    url:'{{ route("products.index") }}',          icon:'mdi-shopping',       category:'Catalogue',        keywords:['product','sku','barcode','ready','rack','shop']},
         @endcan
+        @can('View online orders')
+        {title:'Online Orders',          url:'{{ route("store.orders.index") }}',      icon:'mdi-shopping',       category:'Online Store',     keywords:['online','shop','ecommerce','whatsapp','web','order','cart']},
+        @endcan
+        @can('Manage online orders')
+        {title:'Take a WhatsApp Order',  url:'{{ route("store.orders.create") }}',     icon:'mdi-whatsapp',       category:'Online Store',     keywords:['whatsapp','rep','phone','instagram','order']},
+        @endcan
+        @can('Manage store products')
+        {title:'Shop Products & Pictures', url:'{{ route("store.products.index") }}',  icon:'mdi-image-multiple', category:'Online Store',     keywords:['picture','photo','image','gallery','price','sale','shop']},
+        @endcan
+        @can('Manage online store')
+        {title:'Shop Settings',          url:'{{ route("store.settings.edit") }}',     icon:'mdi-cog',            category:'Online Store',     keywords:['stripe','paystack','bank','whatsapp','delivery','coupon','shop']},
+        @endcan
         @can('View order')
         {title:'Orders',                 url:'{{ route("orders.index") }}',            icon:'mdi-clipboard-text', category:'Orders',           keywords:['order','job','garment','delivery','due','late']},
         @endcan

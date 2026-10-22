@@ -216,7 +216,14 @@ class FinanceFacts
         return $this->memo('order_cost', function () {
             $ids = $this->deliveredOrders()->pluck('id');
 
-            return $ids->isEmpty() ? 0.0 : round((float) MaterialIssue::whereIn('order_id', $ids)->sum('total_cost'), 2);
+            if ($ids->isEmpty()) {
+                return 0.0;
+            }
+            // Material issued to the orders, plus ready-made stock sold through the online shop (posted against the order).
+            $shop = (float) \App\Models\StockMovement::whereIn('order_id', $ids)->whereIn('type', ['sale', 'sale_return'])
+                ->get(['quantity', 'unit_cost'])->sum(fn ($m) => -1 * (float) $m->quantity * (float) $m->unit_cost);
+
+            return round((float) MaterialIssue::whereIn('order_id', $ids)->sum('total_cost') + $shop, 2);
         });
     }
 

@@ -65,6 +65,10 @@ class PermissionCatalog
         'Projects' => [
             'View project', 'Manage project', 'Publish project update',
         ],
+        'Online Store' => [
+            'View online orders', 'Manage online orders', 'Confirm online payment',
+            'Manage store products', 'Manage online store', 'Moderate reviews',
+        ],
         'Appointments & Messaging' => [
             'Manage appointment', 'Manage notification templates', 'Send campaign',
         ],
@@ -100,6 +104,18 @@ class PermissionCatalog
                 'View production', 'Update production', 'Manage production workflow', 'Record quality check', 'Manage fitting', 'Manage delivery',
                 'View project', 'Manage project', 'Publish project update',
                 'Manage appointment', 'View reports', 'Export reports',
+                'View online orders', 'Manage online orders', 'Confirm online payment', 'Manage store products', 'Manage online store', 'Moderate reviews',
+            ],
+        ],
+        'Online Sales Rep' => [
+            'badge'       => '#25d366',
+            'description' => 'Takes online and WhatsApp orders: confirms them, records payments, updates delivery.',
+            'permissions' => [
+                'View dashboard',
+                'View customer', 'Create customer',
+                'View product', 'View inventory', 'View order',
+                'View payment', 'Record payment',
+                'View online orders', 'Manage online orders', 'Confirm online payment',
             ],
         ],
         'Designer' => [
@@ -135,6 +151,7 @@ class PermissionCatalog
                 'View inventory', 'Manage inventory', 'Adjust stock', 'Issue material',
                 'Manage supplier', 'Manage purchase order',
                 'View order', 'View project',
+                'View online orders', 'Manage online orders',
             ],
         ],
         'Cashier' => [
@@ -147,6 +164,7 @@ class PermissionCatalog
                 'View order', 'Create order',
                 'Use POS', 'Open cash shift', 'Close cash shift',
                 'View payment', 'Record payment',
+                'View online orders', 'Confirm online payment',
             ],
         ],
         'Accountant' => [
@@ -157,6 +175,7 @@ class PermissionCatalog
                 'View customer', 'View order', 'View inventory', 'View project', 'View style', 'View product', 'View costing',
                 'View payment', 'Record payment', 'Approve refund', 'Manage invoice', 'Manage expense', 'View financial reports',
                 'View reports', 'Export reports', 'View all branches',
+                'View online orders', 'Confirm online payment',
             ],
         ],
         self::CUSTOMER_ROLE => [
