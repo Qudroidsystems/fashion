@@ -39,6 +39,7 @@ class StockMovement extends Model
         'stock_transfer'   => 'stock-transfers.show',
         'stock_adjustment' => 'stock-adjustments.show',
         'material_issue'   => 'material-issues.show',
+        'shop_order'       => 'store.orders.show',
     ];
 
     protected $fillable = [
@@ -98,7 +99,7 @@ class StockMovement extends Model
             return null;
         }
         $class = ['goods_receipt' => GoodsReceipt::class, 'stock_transfer' => StockTransfer::class,
-            'stock_adjustment' => StockAdjustment::class, 'material_issue' => MaterialIssue::class][$this->source_type];
+            'stock_adjustment' => StockAdjustment::class, 'material_issue' => MaterialIssue::class, 'shop_order' => ShopOrder::class][$this->source_type];
         $publicId = $class::whereKey($this->source_id)->value('public_id');
 
         return $publicId ? route($route, $publicId) : null;

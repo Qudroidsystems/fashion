@@ -12,11 +12,12 @@ class ProductVariant extends Model
     use BelongsToTenant;
 
     protected $fillable = [
-        'tenant_id', 'product_id', 'sku', 'barcode', 'size', 'colour', 'price', 'cost_price', 'reorder_level', 'is_active', 'sort_order',
+        'tenant_id', 'product_id', 'sku', 'barcode', 'size', 'colour', 'colour_hex', 'price', 'compare_at_price', 'cost_price', 'reorder_level', 'is_active', 'sort_order',
     ];
 
     protected $casts = [
         'price'         => 'decimal:2',
+        'compare_at_price' => 'decimal:2',
         'cost_price'    => 'decimal:2',
         'reorder_level' => 'decimal:3',
         'is_active'     => 'boolean',
@@ -43,6 +44,11 @@ class ProductVariant extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function isOnSale(): bool
+    {
+        return $this->compare_at_price !== null && (float) $this->compare_at_price > (float) $this->price;
     }
 
     public function getLabelAttribute(): string

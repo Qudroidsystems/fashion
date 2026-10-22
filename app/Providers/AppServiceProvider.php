@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(TenantContext::class);
         $this->app->singleton(\App\Services\Billing\Entitlements::class);
+        $this->app->scoped(\App\Services\Store\StoreAuth::class);
     }
 
     public function boot(): void

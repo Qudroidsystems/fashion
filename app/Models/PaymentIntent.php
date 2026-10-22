@@ -13,7 +13,7 @@ class PaymentIntent extends Model
     use BelongsToTenant, HasPublicId;
 
     protected $fillable = [
-        'tenant_id', 'provider', 'reference', 'customer_id', 'order_id', 'invoice_id', 'amount', 'currency', 'status',
+        'tenant_id', 'provider', 'reference', 'provider_reference', 'customer_id', 'order_id', 'invoice_id', 'shop_order_id', 'amount', 'currency', 'status',
         'authorization_url', 'provider_status', 'provider_channel', 'provider_payload', 'payment_id', 'paid_at', 'verified_at', 'created_by',
     ];
 
@@ -34,6 +34,11 @@ class PaymentIntent extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function shopOrder(): BelongsTo
+    {
+        return $this->belongsTo(ShopOrder::class);
     }
 
     public function payment(): BelongsTo
