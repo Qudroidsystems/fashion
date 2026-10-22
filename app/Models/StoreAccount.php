@@ -13,11 +13,11 @@ class StoreAccount extends Model
 {
     use BelongsToTenant, HasPublicId;
 
-    protected $fillable = ['tenant_id', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'password', 'marketing_opt_in', 'status', 'last_login_at'];
+    protected $fillable = ['tenant_id', 'customer_id', 'first_name', 'last_name', 'email', 'phone', 'google_id', 'avatar_url', 'email_verified_at', 'password', 'marketing_opt_in', 'status', 'last_login_at'];
 
     protected $hidden = ['password', 'remember_token'];
 
-    protected $casts = ['password' => 'hashed', 'marketing_opt_in' => 'boolean', 'last_login_at' => 'datetime'];
+    protected $casts = ['password' => 'hashed', 'marketing_opt_in' => 'boolean', 'last_login_at' => 'datetime', 'email_verified_at' => 'datetime'];
 
     protected static function booted(): void
     {

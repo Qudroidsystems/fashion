@@ -78,6 +78,61 @@ class AccountController extends StorefrontController
         }, true);
     }
 
+    /* ------------------------------------------------------------ Google */
+
+    /** Start "Continue with Google": off to Google via the platform's single callback address. */
+    public function google(Request $request, string $site): Response
+    {
+        return $this->house($request, $site, function (Tenant $t) use ($request) {
+            if (! \App\Http\Controllers\Auth\GoogleController::enabled()) {
+                return redirect()->to($this->base($request, $t) . '/account/login')->withErrors(['email' => 'Google sign-in is not available on this shop.']);
+            }
+            $nonce = Str::random(40);
+            $request->session()->put('store_google_' . $t->id, ['nonce' => $nonce, 'next' => (string) $request->query('next')]);
+
+            return redirect()->away(\App\Http\Controllers\Sites\ShopGoogleController::authUrl($t->id, $this->abs($request, $t, 'account/google/finish'), $nonce));
+        }, true);
+    }
+
+    /** Back from Google with a one-time ticket: sign in, link by e-mail, or create the account. */
+    public function googleFinish(Request $request, string $site): Response
+    {
+        return $this->house($request, $site, function (Tenant $t) use ($request) {
+            $login = $this->base($request, $t) . '/account/login';
+            $started = $request->session()->pull('store_google_' . $t->id);
+            if ($request->query('error') === 'cancelled') {
+                return redirect()->to($login)->with('toast', 'Google sign-in was cancelled.');
+            }
+            $ticket = (string) $request->query('ticket');
+            $data = preg_match('/^[A-Za-z0-9]{48}$/', $ticket) ? \Illuminate\Support\Facades\Cache::pull('shop-google-ticket:' . $ticket) : null;
+            if (! $data || ! $started || (int) $data['tenant'] !== $t->id || ! hash_equals((string) $started['nonce'], (string) $data['nonce'])) {
+                return redirect()->to($login)->withErrors(['email' => 'Google could not confirm your sign-in. Please try again.']);
+            }
+
+            $account = StoreAccount::where('google_id', $data['sub'])->first() ?? StoreAccount::where('email', $data['email'])->first();
+            $created = false;
+            if ($account && $account->status !== 'active') {
+                return redirect()->to($login)->withErrors(['email' => 'This account is blocked. Please contact the shop.']);
+            }
+            if ($account) {
+                $account->forceFill(['google_id' => $data['sub'], 'email_verified_at' => $account->email_verified_at ?? now(),
+                    'avatar_url' => $data['picture'] ?: $account->avatar_url])->save();
+            } else {
+                $account = StoreAccount::create([
+                    'first_name' => Str::limit(trim((string) $data['first_name']) ?: Str::before($data['email'], '@'), 80, ''),
+                    'last_name' => $data['last_name'] ? Str::limit($data['last_name'], 80, '') : null, 'email' => $data['email'],
+                    'google_id' => $data['sub'], 'avatar_url' => $data['picture'], 'email_verified_at' => now(),
+                    'password' => Str::password(32), 'status' => 'active',
+                ]);
+                $created = true;
+            }
+            $this->signIn($request, $t, $account);
+            $request->merge(['next' => $started['next'] ?? '']);
+
+            return redirect()->to($this->next($request, $t))->with('toast', $created ? 'Your account is ready. Welcome, ' . $account->first_name . '!' : 'Welcome back, ' . $account->first_name . '!');
+        }, true);
+    }
+
     protected function signIn(Request $request, Tenant $t, StoreAccount $account): void
     {
         $token = $this->carts->token($request, $t);

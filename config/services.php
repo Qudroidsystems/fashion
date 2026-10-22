@@ -66,6 +66,9 @@ return [
         'client_id'     => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect'      => env('GOOGLE_REDIRECT_URI'),   // defaults to {APP_URL}/auth/google/callback
+        // Shoppers on the house shops all come back through one address on the platform
+        // (house sites live on many subdomains/domains, Google needs fixed redirect URIs).
+        'shop_redirect' => env('GOOGLE_SHOP_REDIRECT_URI'),   // defaults to {APP_URL}/shop-auth/google/callback
     ],
 
 ];

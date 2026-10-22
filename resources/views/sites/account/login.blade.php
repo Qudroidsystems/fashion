@@ -8,6 +8,7 @@
             <div class="login-wrap">
                 <div class="left">
                     <div class="heading"><h4>Sign in</h4></div>
+                    @include('sites.partials.google-button', ['label' => 'Sign in with Google'])
                     <form method="POST" action="{{ $base }}/account/login" class="form-login form-has-password">
                         @csrf
                         <input type="hidden" name="next" value="{{ request('next') }}">
