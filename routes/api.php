@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductionController;
 use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\MeasurementController;
+use App\Http\Controllers\Api\V1\StaffAppController;
 use App\Http\Controllers\Api\V1\TenantController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Everything below runs inside a fashion house.
         Route::middleware(['api.tenant', 'plan'])->group(function () {
             Route::get('/tenants/current', [TenantController::class, 'current'])->name('tenants.current');
+
+            // Staff app home, people, fittings calendar and notifications
+            Route::get('/dashboard', [StaffAppController::class, 'dashboard'])->name('dashboard');
+            Route::get('/staff', [StaffAppController::class, 'staff'])->name('staff.index');
+            Route::get('/fittings', [StaffAppController::class, 'fittings'])->name('fittings.index');
+            Route::get('/notifications', [StaffAppController::class, 'notifications'])->name('notifications.index');
+            Route::post('/notifications/read-all', [StaffAppController::class, 'readAllNotifications'])->name('notifications.read-all');
+            Route::post('/notifications/{id}/read', [StaffAppController::class, 'readNotification'])->name('notifications.read');
 
             // Customers (SRS §8.2)
             Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
@@ -97,6 +106,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Quotes, orders, invoices and payments (SRS §8.2)
             Route::get('/quotations', [OrderController::class, 'quotations'])->name('quotations.index');
             Route::post('/quotations', [OrderController::class, 'storeQuotation'])->middleware('idempotent')->name('quotations.store');
+            Route::get('/quotations/{quotation}', [OrderController::class, 'quotation'])->name('quotations.show');
             Route::post('/quotations/{quotation}/accept', [OrderController::class, 'accept'])->middleware('idempotent')->name('quotations.accept');
             Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
             Route::post('/orders', [OrderController::class, 'store'])->middleware('idempotent')->name('orders.store');

@@ -26,7 +26,7 @@ class ReportController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        return response()->json(['data' => array_values(array_map(fn (Report $r) => [
+        return response()->json(['success' => true, 'data' => array_values(array_map(fn (Report $r) => [
             'key' => $r->key(), 'title' => $r->title(), 'description' => $r->description(), 'group' => $r->group(),
             'filters' => $r->filters(), 'default_period' => $r->defaultPeriod(), 'locked_by' => $r->lockedBy(),
         ], $this->reports->visibleTo($request->user())))]);
@@ -38,11 +38,12 @@ class ReportController extends Controller
         abort_unless($def, 404);
         abort_unless($def->canView($request->user()), 403, 'Your role can\'t see this report.');
         if ($feature = $def->lockedBy()) {
-            return response()->json(['message' => 'This report is not included in your plan.', 'feature' => $feature], 402);
+            return response()->json(['success' => false, 'code' => 'plan_feature', 'message' => 'This report is not included in your plan.', 'feature' => $feature], 402);
         }
         $f = ReportFilters::fromRequest($request, $def->defaultPeriod());
 
         return response()->json([
+            'success' => true,
             'report' => ['key' => $def->key(), 'title' => $def->title()],
             'filters' => [
                 'period' => $f->preset, 'from' => $f->fromDate(), 'to' => $f->toDate(), 'label' => $def->periodText($f), 'all_time' => $f->allTime,
