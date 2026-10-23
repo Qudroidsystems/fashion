@@ -135,3 +135,18 @@ it('shows one quotation with its lines', function () {
     $this->actingAs($owner, 'sanctum')->getJson("/api/v1/quotations/{$q['id']}")
         ->assertOk()->assertJsonPath('data.lines.0.description', 'Agbada embroidery');
 });
+
+it('lists orders due soon on the dashboard with their balance', function () {
+    [$tenant, $owner] = makeHouse('Due House');
+    $customer = CurrentTenant::run($tenant, fn () => Customer::create(['first_name' => 'Bisola', 'phone' => '08030000009']));
+    $this->actingAs($owner, 'sanctum')->postJson('/api/v1/orders', [
+        'customer_id' => $customer->public_id, 'promised_date' => now()->addDays(3)->toDateString(),
+        'lines' => [['kind' => 'service', 'description' => 'Iro and buba', 'unit_price' => 40000]], 'confirm' => true,
+    ])->assertCreated();
+
+    $this->actingAs($owner, 'sanctum')->getJson('/api/v1/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.due_soon.0.customer.name', 'Bisola')
+        ->assertJsonPath('data.due_soon.0.balance', 40000)
+        ->assertJsonPath('data.orders.due_this_week', 1);
+});
