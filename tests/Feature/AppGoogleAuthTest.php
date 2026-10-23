@@ -13,11 +13,16 @@ beforeEach(function () {
     ]);
 });
 
+/** What Google's tokeninfo endpoint answers; can be changed within one test. */
 function fakeGoogleToken(array $claims): void
 {
-    Http::fake(['oauth2.googleapis.com/tokeninfo*' => Http::response($claims + [
+    $GLOBALS['google_claims'] = $claims + [
         'iss' => 'https://accounts.google.com', 'exp' => (string) (time() + 600), 'email_verified' => 'true',
-    ])]);
+    ];
+    if (($GLOBALS['google_fake_app'] ?? null) !== app()) {
+        $GLOBALS['google_fake_app'] = app();
+        Http::fake(['oauth2.googleapis.com/tokeninfo*' => fn () => Http::response($GLOBALS['google_claims'])]);
+    }
 }
 
 it('signs up a new person with Google from the app, then creates their house', function () {

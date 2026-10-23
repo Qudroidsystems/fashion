@@ -73,7 +73,9 @@ class StaffAppController extends Controller
                 'pipeline'      => collect($o['pipeline'])->map(fn ($n, $s) => ['status' => $s, 'label' => OrderStatus::label($s), 'count' => $n])->values()->all(),
             ];
             $money = $u->can('View payment');
-            $out['due_soon'] = collect($o['due'])->map(fn (Order $x) => [
+            // The dashboard list is a narrow select; load the full orders for balances.
+            $full = Order::with('customer:id,public_id,first_name,last_name')->whereKey(collect($o['due'])->pluck('id'))->get()->keyBy('id');
+            $out['due_soon'] = collect($o['due'])->map(fn (Order $x) => $full->get($x->id) ?? $x)->map(fn (Order $x) => [
                 'id' => $x->public_id, 'number' => $x->number, 'title' => $x->title, 'status' => $x->status, 'status_label' => $x->status_label,
                 'promised_date' => $x->promised_date?->toDateString(), 'priority' => $x->priority, 'risk' => $x->risk_level,
                 'customer' => ['id' => $x->customer?->public_id, 'name' => $x->customer?->name],

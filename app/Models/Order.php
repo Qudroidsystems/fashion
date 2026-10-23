@@ -113,7 +113,15 @@ class Order extends Model
 
     public function chargeable(): float
     {
-        return in_array($this->status, ['draft', 'cancelled'], true) ? 0.0 : $this->total;
+        if (in_array($this->status, ['draft', 'cancelled'], true)) {
+            return 0.0;
+        }
+        // A partial select (e.g. a dashboard list) may not have loaded the total: read it rather than guess.
+        $total = array_key_exists('total', $this->attributes)
+            ? $this->total
+            : static::query()->whereKey($this->getKey())->value('total');
+
+        return (float) ($total ?? 0);
     }
 
     /** Net money applied to this order and its invoices. */
