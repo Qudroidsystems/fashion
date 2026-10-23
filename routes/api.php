@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogueController;
 use App\Http\Controllers\Api\V1\CustomerController;
@@ -66,6 +67,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
             // Measurements (SRS §8.2)
             Route::get('/measurement-templates', [MeasurementController::class, 'templates'])->name('measurement-templates.index');
+            Route::post('/measurement-templates/quick', [MeasurementController::class, 'quickTemplate'])->middleware('idempotent')->name('measurement-templates.quick');
+            Route::get('/measurement-parameters', [MeasurementController::class, 'parameters'])->name('measurement-parameters.index');
             Route::get('/customers/{customer}/measurement-sessions', [MeasurementController::class, 'index'])->name('measurement-sessions.index');
             Route::post('/customers/{customer}/measurement-sessions', [MeasurementController::class, 'store'])->middleware('idempotent')->name('measurement-sessions.store');
             Route::get('/measurement-sessions/{session}', [MeasurementController::class, 'show'])->name('measurement-sessions.show');
@@ -154,6 +157,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Reports (SRS §8.2) — same permissions, plan and branch limits as the screens.
             Route::get('/reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('reports.index');
             Route::get('/reports/{report}', [\App\Http\Controllers\Api\V1\ReportController::class, 'show'])->name('reports.show');
+
+            // QR attendance: staff scan the entrance code coming in and going out.
+            Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->middleware('throttle:20,1')->name('attendance.scan');
+            Route::get('/attendance/me', [AttendanceController::class, 'me'])->name('attendance.me');
+            Route::get('/attendance/code', [AttendanceController::class, 'code'])->name('attendance.code');
+            Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+            Route::post('/attendance', [AttendanceController::class, 'store'])->middleware('idempotent')->name('attendance.store');
         });
     });
 });

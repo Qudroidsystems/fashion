@@ -206,8 +206,10 @@ it('keeps measurements inside their house and enforces permissions', function ()
 
     $tailor = addStaff($this->house, 'Tailor');
     $this->actingAs($tailor)->get("/measurements/{$s->public_id}")->assertOk();
-    $this->actingAs($tailor)->get("/customers/{$this->customer->public_id}/measurements/new")->assertForbidden();
+    // Tailors measure customers (they can take measurements) but can't approve them.
+    $this->actingAs($tailor)->get("/customers/{$this->customer->public_id}/measurements/new")->assertOk();
     $this->actingAs($tailor)->post("/measurements/{$s->public_id}/approve")->assertForbidden();
+    $this->actingAs($cashier)->get("/customers/{$this->customer->public_id}/measurements/new")->assertForbidden();
 });
 
 it('exposes measurements over the API', function () {
