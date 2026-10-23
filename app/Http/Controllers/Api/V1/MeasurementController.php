@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\MeasurementParameter;
 use App\Models\MeasurementRequest;
 use App\Models\MeasurementSession;
 use App\Models\MeasurementTemplate;
@@ -11,6 +12,8 @@ use App\Models\MeasurementTemplateVersion;
 use App\Models\MeasurementValue;
 use App\Services\Measurements\MeasurementRequestService;
 use App\Services\Measurements\MeasurementService;
+use App\Services\Measurements\TemplateService;
+use Illuminate\Support\Str;
 use App\Support\Measurements\Units;
 use App\Support\Tenancy\CurrentTenant;
 use Illuminate\Http\JsonResponse;
@@ -34,8 +37,8 @@ class MeasurementController extends Controller
 {
     public function __construct(protected MeasurementService $service, protected MeasurementRequestService $requests)
     {
-        $this->middleware('permission:View measurement', ['only' => ['templates', 'index', 'show', 'comparison']]);
-        $this->middleware('permission:Capture measurement', ['only' => ['store', 'update', 'submit']]);
+        $this->middleware('permission:View measurement', ['only' => ['templates', 'parameters', 'index', 'show', 'comparison']]);
+        $this->middleware('permission:Capture measurement', ['only' => ['store', 'update', 'submit', 'quickTemplate']]);
         $this->middleware('permission:Approve measurement', ['only' => ['approve', 'reject']]);
         $this->middleware('permission:Send measurement request', ['only' => ['storeRequest', 'revokeRequest']]);
     }
@@ -44,7 +47,59 @@ class MeasurementController extends Controller
     {
         $templates = MeasurementTemplate::usable()->with('currentVersion.parameters')->orderBy('name')->get();
 
-        return response()->json(['success' => true, 'data' => $templates->map(fn ($t) => [
+        return response()->json(['success' => true, 'data' => $templates->map(fn ($t) => $this->templateData($t))]);
+    }
+
+    /** GET /measurement-parameters — everything the house can measure, for building a template on the spot. */
+    public function parameters(): JsonResponse
+    {
+        $params = MeasurementParameter::where('is_active', true)->orderBy('body_area')->orderBy('sort_order')->orderBy('label')->get();
+
+        return response()->json(['success' => true, 'data' => $params->map(fn ($p) => [
+            'id' => $p->id, 'code' => $p->code, 'label' => $p->label, 'body_area' => $p->body_area,
+            'body_area_label' => MeasurementParameter::AREAS[$p->body_area] ?? 'Other', 'data_type' => $p->data_type,
+            'sides' => $p->is_bilateral ? ['left', 'right'] : ['both'], 'options' => $p->options, 'instructions' => $p->instructions,
+        ])->values()]);
+    }
+
+    /**
+     * POST /measurement-templates/quick — the measurer picks the measurements they need while the
+     * customer waits; they're saved (and published) as a new template, ready to use now and next time.
+     * Body: {name, parameter_ids: [..] in order, customer_id?, garment_category?, audience?}
+     */
+    public function quickTemplate(Request $request, TemplateService $templates): JsonResponse
+    {
+        $tenant = CurrentTenant::id();
+        $data = $request->validate([
+            'name'             => 'required|string|max:100',
+            'parameter_ids'    => 'required|array|min:1|max:80',
+            'parameter_ids.*'  => ['integer', Rule::exists('measurement_parameters', 'id')->where('tenant_id', $tenant)],
+            'customer_id'      => ['nullable', Rule::exists('customers', 'public_id')->where('tenant_id', $tenant)],
+            'garment_category' => 'nullable|string|max:60',
+            'audience'         => ['nullable', Rule::in(array_keys(MeasurementTemplate::AUDIENCES))],
+        ]);
+        $customer = ! empty($data['customer_id']) ? Customer::where('public_id', $data['customer_id'])->first() : null;
+
+        $base = Str::of($data['name'])->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->limit(28, '')->value();
+        $base = preg_match('/^[a-z]/', $base) ? $base : 'custom_' . $base;
+        $code = $base;
+        for ($i = 2; MeasurementTemplate::where('code', $code)->exists(); $i++) {
+            $code = Str::limit($base, 34, '') . '_' . $i;
+        }
+
+        $template = $templates->create([
+            'name' => $data['name'], 'code' => $code, 'garment_category' => $data['garment_category'] ?? null,
+            'audience' => $data['audience'] ?? 'any', 'is_active' => true,
+            'description' => 'Made while measuring' . ($customer ? " {$customer->full_name}" : '') . ' on the staff app by ' . $request->user()->name . ' on ' . now()->toDateString() . '.',
+        ], collect($data['parameter_ids'])->map(fn ($id) => ['parameter_id' => $id, 'is_required' => false])->all());
+        $templates->publish($template->draft()->first(), 'Created on the spot from the staff app');
+
+        return response()->json(['success' => true, 'data' => $this->templateData($template->fresh('currentVersion.parameters'))], 201);
+    }
+
+    protected function templateData(MeasurementTemplate $t): array
+    {
+        return [
             'id'               => $t->id,
             'code'             => $t->code,
             'name'             => $t->name,
@@ -53,11 +108,12 @@ class MeasurementController extends Controller
             'version_id'       => $t->current_version_id,
             'version_no'       => $t->currentVersion?->version_no,
             'parameters'       => $t->currentVersion?->parameters->map(fn ($p) => [
+                'parameter_id' => $p->parameter_id,
                 'code' => $p->code, 'label' => $p->label, 'data_type' => $p->data_type, 'sides' => $p->sides(),
                 'required' => (bool) $p->is_required, 'options' => $p->options, 'min_mm' => $p->min_mm, 'max_mm' => $p->max_mm,
                 'instructions' => $p->instructions, 'guidance' => $p->guidance,
             ])->values() ?? [],
-        ])]);
+        ];
     }
 
     public function index(Request $request, Customer $customer): JsonResponse

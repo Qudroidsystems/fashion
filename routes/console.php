@@ -18,6 +18,32 @@ Artisan::command('fhmp:sync-permissions', function (TenantProvisioner $provision
     $this->info('Permission catalogue and default roles are up to date.');
 })->purpose('Sync permissions and default roles for every fashion house');
 
+/* Give a role new permissions in every house (sync never changes existing roles, so new
+   features reach them only this way). Only adds; nothing is taken away.
+   e.g. php artisan fhmp:grant Manager "View attendance" "Manage attendance" */
+Artisan::command('fhmp:grant {role} {permissions*}', function () {
+    TenantProvisioner::syncPermissionCatalog();
+    $perms = $this->argument('permissions');
+    $unknown = array_diff($perms, \App\Support\PermissionCatalog::all());
+    if ($unknown) {
+        $this->error('Unknown permission: ' . implode(', ', $unknown));
+
+        return 1;
+    }
+    $n = 0;
+    \App\Models\Tenant::query()->each(function ($tenant) use ($perms, &$n) {
+        \App\Support\Tenancy\CurrentTenant::run($tenant, function ($tenant) use ($perms, &$n) {
+            $role = \App\Models\Role::where('tenant_id', $tenant->id)->where('name', $this->argument('role'))->where('guard_name', 'web')->first();
+            if ($role) {
+                $role->givePermissionTo($perms);
+                $n++;
+            }
+        });
+    });
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->info("Granted to {$this->argument('role')} in {$n} house(s).");
+})->purpose('Add permissions to a role in every fashion house');
+
 /* Add the starter measurement parameters and templates to fashion houses that lack them. */
 Artisan::command('fhmp:measurement-kit {tenant? : slug; all houses when omitted}', function (\App\Services\Measurements\MeasurementStarterKit $kit) {
     $q = \App\Models\Tenant::query();

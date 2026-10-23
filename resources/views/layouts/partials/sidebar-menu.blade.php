@@ -23,7 +23,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project') || $u->can('View reports'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project') || $u->can('View reports') || $u->can('View attendance'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -214,6 +214,14 @@
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
             <i class="ri-bar-chart-box-line"></i> <span>Reports</span>
+        </a>
+    </li>
+    @endcan
+
+    @can('View attendance')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}" href="{{ route('attendance.index') }}">
+            <i class="ri-qr-scan-2-line"></i> <span>Attendance</span>
         </a>
     </li>
     @endcan

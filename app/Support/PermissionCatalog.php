@@ -75,6 +75,9 @@ class PermissionCatalog
         'Reports' => [
             'View reports', 'Export reports', 'View all branches',
         ],
+        'Attendance' => [
+            'View attendance', 'Manage attendance',
+        ],
     ];
 
     /**
@@ -105,6 +108,7 @@ class PermissionCatalog
                 'View project', 'Manage project', 'Publish project update',
                 'Manage appointment', 'View reports', 'Export reports',
                 'View online orders', 'Manage online orders', 'Confirm online payment', 'Manage store products', 'Manage online store', 'Moderate reviews',
+                'View attendance', 'Manage attendance',
             ],
         ],
         'Online Sales Rep' => [
@@ -137,7 +141,7 @@ class PermissionCatalog
             'description' => 'Production staff: assigned work, stage updates, material use, quality issues.',
             'permissions' => [
                 'View dashboard',
-                'View customer', 'View measurement', 'View style',
+                'View customer', 'View measurement', 'Capture measurement', 'View style',
                 'View order', 'View production', 'Update production', 'Record quality check',
                 'View project',
             ],
@@ -176,6 +180,7 @@ class PermissionCatalog
                 'View payment', 'Record payment', 'Approve refund', 'Manage invoice', 'Manage expense', 'View financial reports',
                 'View reports', 'Export reports', 'View all branches',
                 'View online orders', 'Confirm online payment',
+                'View attendance',
             ],
         ],
         self::CUSTOMER_ROLE => [
