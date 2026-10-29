@@ -183,6 +183,18 @@ Artisan::command('fhmp:fitting-reminders', function () {
 
 \Illuminate\Support\Facades\Schedule::command('fhmp:fitting-reminders')->everyFiveMinutes()->withoutOverlapping();
 
+/* Customer materials: remind customers to collect what they left (9am–7pm house time) and give staff the daily list. */
+Artisan::command('fhmp:material-reminders', function () {
+    $n = 0;
+    \App\Models\Tenant::whereIn('status', config('tenancy.usable_statuses'))->each(function ($tenant) use (&$n) {
+        \App\Support\Tenancy\CurrentTenant::run($tenant, function () use (&$n) {
+            $n += app(\App\Services\Materials\MaterialService::class)->sendDue();
+        });
+    });
+    $this->info("{$n} customer(s) reminded about their materials.");
+})->purpose('Remind customers to collect materials left with the house');
+\Illuminate\Support\Facades\Schedule::command('fhmp:material-reminders')->hourly()->withoutOverlapping();
+
 /* FR-PRD-009: re-assess late-delivery risk for open orders; people hear only when it rises. */
 Artisan::command('fhmp:delivery-risk', function () {
     $n = 0;

@@ -122,6 +122,9 @@ class CustomerController extends Controller
             'channels'  => CustomerConsent::CHANNELS,
             'purposes'  => CustomerConsent::PURPOSES,
             'tz'        => CurrentTenant::get()->timezone,
+            'cMaterials' => $user->can('View customer materials')
+                ? \App\Models\CustomerMaterial::where('customer_id', $customer->id)->with('order:id,public_id,number')->latest('received_at')->limit(50)->get() : collect(),
+            'cMaterialChannels' => $user->can('Manage customer materials') ? app(\App\Services\Messaging\Messenger::class)->available() : [],
         ] + $this->measurementData($customer, $user) + $this->orderData($customer, $user));
     }
 

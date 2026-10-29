@@ -36,6 +36,10 @@ class DeliveryController extends Controller
             'outstanding_conditions' => 'nullable|string|max:1000',
             'address'                => 'nullable|string|max:255',
             'evidence'               => 'nullable|image|max:5120',
+            'material_ids'           => 'nullable|array',
+            'material_ids.*'         => 'string',
+            'material_quantities'    => 'nullable|array',
+            'material_quantities.*'  => 'nullable|numeric|min:0',
         ]);
         $delivery = $this->deliveries->handOver($order, $data, $request->user(), $request->file('evidence'));
 

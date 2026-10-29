@@ -43,6 +43,7 @@ class DocumentNumber
         'project'          => 'PRJ-{YYYY}-{SEQ:4}',
         'expense'          => 'EXP-{YYYY}-{SEQ:5}',
         'shop_order'       => 'WEB-{YYYY}-{SEQ:5}',
+        'customer_material' => 'MAT-{YYYY}-{SEQ:5}',
     ];
 
     public static function next(string $key, ?Tenant $tenant = null): string

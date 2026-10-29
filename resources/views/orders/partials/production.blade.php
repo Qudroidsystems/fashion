@@ -117,6 +117,19 @@
                 <div class="col-md-4"><input name="confirmation_ref" class="form-control form-control-sm" maxlength="120" placeholder="ID / code / note"></div>
                 <div class="col-12 dl-addr d-none"><input name="address" class="form-control form-control-sm" maxlength="255" value="{{ $c->address }}" placeholder="Delivery address"></div>
                 @if($owes)<div class="col-12"><textarea name="outstanding_conditions" class="form-control form-control-sm" rows="2" required placeholder="{{ \App\Support\Money::format($balance) }} still owed — how and when will it be paid?"></textarea></div>@endif
+                @php $hmats = auth()->user()->can('Manage customer materials') ? \App\Models\CustomerMaterial::withHouse()->where('customer_id', $order->customer_id)->orderByRaw('order_id = ? desc', [$order->id])->get() : collect(); @endphp
+                @if($hmats->isNotEmpty())
+                    <div class="col-12"><div class="cb-banner warning mb-0"><i class="ri-archive-drawer-line"></i><div class="w-100">
+                        <div class="fw-semibold mb-1">Give back with this handover</div>
+                        @foreach($hmats as $hm)
+                            <label class="d-flex flex-wrap gap-2 small align-items-center"><input type="checkbox" name="material_ids[]" value="{{ $hm->public_id }}" @checked($hm->order_id === $order->id)>
+                                {{ $hm->number }} · {{ $hm->summary }}{{ $hm->location ? ' · ' . $hm->location : '' }}
+                                @if($hm->quantity)<span class="input-group input-group-sm" style="width:170px"><span class="input-group-text">left over</span><input type="number" step="0.01" min="0" name="material_quantities[{{ $hm->public_id }}]" class="form-control"></span>@endif
+                            </label>
+                        @endforeach
+                        <div class="small text-muted mt-1">{{ $c->first_name }}’s items still with you. Untick anything staying here.</div>
+                    </div></div></div>
+                @endif
                 <div class="col-md-8"><input type="file" name="evidence" accept="image/*" class="form-control form-control-sm" title="Photo (optional)"></div>
                 <div class="col-md-4 d-grid"><button class="action-btn btn-primary-cb justify-content-center"><i class="ri-hand-heart-line"></i>Record handover</button></div>
             </div>

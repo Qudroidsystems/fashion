@@ -126,6 +126,9 @@
                 @can('View order')
                 <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#orders"><i class="ri-file-list-3-line me-1"></i>Orders <span class="badge bg-light text-body ms-1">{{ $oOrders->whereIn('status', \App\Support\Orders\OrderStatus::OPEN)->count() }}</span></a></li>
                 @endcan
+                @can('View customer materials')
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#materials"><i class="ri-archive-drawer-line me-1"></i>Materials <span class="badge {{ $cMaterials->filter->isWithHouse()->isNotEmpty() ? 'bg-warning text-dark' : 'bg-light text-body' }} ms-1">{{ $cMaterials->filter->isWithHouse()->count() }}</span></a></li>
+                @endcan
             </ul>
 
             <div class="tab-content">
@@ -244,6 +247,10 @@
 
                 @can('View order')
                 @include('customers.partials.orders')
+                @endcan
+
+                @can('View customer materials')
+                @include('customers.partials.materials')
                 @endcan
             </div>
         </div>

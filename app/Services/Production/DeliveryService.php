@@ -26,7 +26,7 @@ class DeliveryService
     {
     }
 
-    /** $data: line_ids[], method, handed_over_at?, recipient_name, recipient_phone?, relationship?, confirmation, confirmation_ref?, outstanding_conditions?, address? */
+    /** $data: line_ids[], material_ids[]?, material_quantities[]?, method, handed_over_at?, recipient_name, recipient_phone?, relationship?, confirmation, confirmation_ref?, outstanding_conditions?, address? */
     public function handOver(Order $order, array $data, User $by, ?UploadedFile $evidence = null): Delivery
     {
         if (! in_array($order->status, ['ready', 'in_production', 'fitting'], true)) {
@@ -71,6 +71,15 @@ class DeliveryService
             if ($remaining === 0) {
                 // All garments gone: the order is delivered (ready → delivered, via ready if needed).
                 $this->production->moveOrder($order->fresh(), 'delivered', ($delivery->method === 'delivery' ? 'Delivered to ' : 'Collected by ') . $delivery->recipient_name);
+            }
+            // Leftover fabric / the customer's own items going back with the garments.
+            if (! empty($data['material_ids'])) {
+                $items = \App\Models\CustomerMaterial::withHouse()->where('customer_id', $order->customer_id)
+                    ->where(fn ($q) => $q->whereIn('public_id', $data['material_ids'])->orWhereIn('id', array_filter($data['material_ids'], 'is_numeric')))->get();
+                app(\App\Services\Materials\MaterialService::class)->giveBack($items, [
+                    'returned_to' => $delivery->recipient_name, 'returned_to_phone' => $delivery->recipient_phone,
+                    'quantities' => $data['material_quantities'] ?? [],
+                ], $by, $delivery);
             }
             AuditLogger::log('order.handed_over', $order, after: [
                 'delivery' => $delivery->number, 'lines' => $lines->pluck('description')->all(), 'recipient' => $delivery->recipient_name,
