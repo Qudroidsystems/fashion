@@ -16,7 +16,7 @@ class MessageLog extends Model
 
     public const CHANNELS = ['email' => 'E-mail', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp'];
 
-    protected $fillable = ['tenant_id', 'customer_id', 'channel', 'to', 'subject', 'body', 'status', 'error', 'purpose', 'related_type', 'related_id', 'sent_by', 'created_at'];
+    protected $fillable = ['tenant_id', 'customer_id', 'channel', 'to', 'subject', 'body', 'status', 'error', 'purpose', 'outgoing_message_id', 'related_type', 'related_id', 'sent_by', 'created_at'];
 
     protected $casts = ['created_at' => 'datetime'];
 

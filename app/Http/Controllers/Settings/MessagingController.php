@@ -40,8 +40,9 @@ class MessagingController extends Controller
             'twilio_token' => 'nullable|string|max:200',
             'twilio_from' => 'nullable|string|max:30|required_if:sms_provider,twilio',
             'whatsapp_template' => 'nullable|string|max:120|regex:/^[a-z0-9_]+$/',
+            'whatsapp_update_template' => 'nullable|string|max:120|regex:/^[a-z0-9_]+$/',
             'whatsapp_lang' => 'nullable|string|max:10',
-        ], ['whatsapp_template.regex' => 'Template names use small letters, numbers and _ only, as in Meta.']);
+        ], ['whatsapp_template.regex' => 'Template names use small letters, numbers and _ only, as in Meta.', 'whatsapp_update_template.regex' => 'Template names use small letters, numbers and _ only, as in Meta.']);
         Messenger::saveSettings($data);
 
         return back()->with('success', 'Messaging settings saved.');

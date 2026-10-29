@@ -112,6 +112,7 @@ class PermissionCatalog
                 'Manage appointment', 'View reports', 'Export reports',
                 'View online orders', 'Manage online orders', 'Confirm online payment', 'Manage store products', 'Manage online store', 'Moderate reviews',
                 'View attendance', 'Manage attendance',
+                'Manage notification templates', 'Send campaign',
                 'View customer materials', 'Manage customer materials',
             ],
         ],
@@ -178,6 +179,7 @@ class PermissionCatalog
                 'View payment', 'Record payment',
                 'View online orders', 'Confirm online payment',
                 'View customer materials', 'Manage customer materials',
+                'Manage appointment',
             ],
         ],
         'Accountant' => [

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Materials\MaterialController;
+use App\Http\Controllers\Orders\OrderMessageController;
+use App\Http\Controllers\Settings\CustomerMessagesController;
 use App\Http\Controllers\Settings\MessagingController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,3 +27,8 @@ Route::post('/customers/{customer}/materials/remind', [MaterialController::class
 Route::get('/settings/messaging', [MessagingController::class, 'edit'])->name('settings.messaging');
 Route::put('/settings/messaging', [MessagingController::class, 'update'])->name('settings.messaging.update');
 Route::post('/settings/messaging/test', [MessagingController::class, 'test'])->name('settings.messaging.test');
+
+Route::get('/settings/customer-messages', [CustomerMessagesController::class, 'edit'])->name('settings.customer-messages');
+Route::put('/settings/customer-messages', [CustomerMessagesController::class, 'update'])->name('settings.customer-messages.update');
+Route::post('/orders/{order}/messages', [OrderMessageController::class, 'order'])->name('orders.messages.store');
+Route::post('/customers/{customer}/messages', [OrderMessageController::class, 'customer'])->name('customers.messages.store');

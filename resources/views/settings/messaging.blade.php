@@ -6,7 +6,11 @@
 <div class="container-fluid">
 @php use App\Models\MessageLog; $s = $settings; @endphp
 
-    <x-cb.hero title="Messaging" icon="ri-message-3-line" subtitle="How the platform reaches your customers: e-mail, SMS and WhatsApp. Used for reminders such as collecting materials." />
+    <x-cb.hero title="Messaging" icon="ri-message-3-line" subtitle="How the platform reaches your customers: e-mail, SMS and WhatsApp — for order updates, payment receipts, fittings, balances and collecting materials.">
+        @can('Manage notification templates')
+        <x-slot:actions><a class="cb-hero-btn" href="{{ route('settings.customer-messages') }}"><i class="ri-chat-settings-line me-1"></i>Customer messages</a></x-slot:actions>
+        @endcan
+    </x-cb.hero>
     @include('inventory.partials.flash')
 
     <div class="row g-3 mb-3">
@@ -60,6 +64,11 @@
                     <div class="form-text mb-3">WhatsApp only lets businesses start a chat with a template approved by Meta. Create one with three values, for example:<br>
                         <em>Hello @{{1}}, we are still keeping your @{{2}} at @{{3}}. Please come and collect it, or reply to arrange delivery.</em><br>
                         @{{1}} = first name, @{{2}} = the items, @{{3}} = your house name. Without a template, messages only reach customers who wrote to you in the last 24 hours.</div>
+                    <label class="form-label">Updates template name</label>
+                    <input name="whatsapp_update_template" class="form-control mb-1" maxlength="120" value="{{ old('whatsapp_update_template', $s['whatsapp_update_template']) }}" placeholder="e.g. customer_update">
+                    <div class="form-text mb-3">For order updates, receipts and reminders. Three values, for example:<br>
+                        <em>Hello @{{1}}, here is an update from @{{3}}: @{{2}}</em><br>
+                        @{{1}} = first name, @{{2}} = the message, @{{3}} = your house name.</div>
                     <label class="form-label">Template language</label>
                     <input name="whatsapp_lang" class="form-control" maxlength="10" value="{{ old('whatsapp_lang', $s['whatsapp_lang']) }}" placeholder="en">
                 </x-cb.card>

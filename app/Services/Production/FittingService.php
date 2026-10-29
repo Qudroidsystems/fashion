@@ -206,6 +206,7 @@ class FittingService
                 if ($c?->email && $c->hasConsent('email', 'transactional')) {
                     Notification::route('mail', $c->email)->notify(new FittingReminderDue($f, true));
                 }
+                \App\Services\Messaging\CustomerUpdates::safely(fn ($u) => $u->fittingReminder($f, $r->id));
                 $sent++;
             });
 

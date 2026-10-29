@@ -44,7 +44,8 @@ class Messenger
             'twilio_from'       => $s['twilio_from'] ?? null,
             'has_termii_key'    => ! empty($s['termii_key']),
             'has_twilio_token'  => ! empty($s['twilio_token']),
-            'whatsapp_template' => $s['whatsapp_template'] ?? null,
+            'whatsapp_template' => $s['whatsapp_template'] ?? null,          // materials reminder: {{1}} name, {{2}} items, {{3}} house
+            'whatsapp_update_template' => $s['whatsapp_update_template'] ?? null, // any update: {{1}} name, {{2}} message, {{3}} house
             'whatsapp_lang'     => $s['whatsapp_lang'] ?? 'en',
         ];
     }
@@ -55,7 +56,7 @@ class Messenger
         $tenant = CurrentTenant::require();
         $settings = $tenant->settings ?? [];
         $m = (array) ($settings['messaging'] ?? []);
-        foreach (['sms_provider', 'sms_sender', 'twilio_sid', 'twilio_from', 'whatsapp_template', 'whatsapp_lang'] as $k) {
+        foreach (['sms_provider', 'sms_sender', 'twilio_sid', 'twilio_from', 'whatsapp_template', 'whatsapp_update_template', 'whatsapp_lang'] as $k) {
             if (array_key_exists($k, $data)) {
                 $m[$k] = $data[$k] !== null ? trim((string) $data[$k]) ?: null : null;
             }
@@ -102,7 +103,9 @@ class Messenger
 
     /**
      * @param array $channels e.g. ['email', 'sms', 'whatsapp']
-     * @param array $opts purpose, related (Model), by (User), whatsapp_params (string[] for the template)
+     * @param array $opts purpose, related (Model), by (User), whatsapp_params (string[] for the template),
+     *                    whatsapp_template (name, instead of the materials one), first (stop after the first channel that sends),
+     *                    outgoing (OutgoingMessage id), consent (transactional | marketing_soft | marketing)
      * @return Collection<MessageLog>
      */
     public function send(Customer $customer, array $channels, string $subject, string $text, array $opts = []): Collection
@@ -113,6 +116,9 @@ class Messenger
         $logs = collect();
 
         foreach (array_unique($channels) as $channel) {
+            if (! empty($opts['first']) && $logs->contains('status', 'sent')) {
+                break;
+            }
             $to = match ($channel) {
                 'email'    => $customer->email,
                 'sms'      => WhatsApp::normalize($customer->phone, $tenant),
@@ -122,13 +128,15 @@ class Messenger
             [$status, $error] = match (true) {
                 ! isset($ready[$channel])  => ['skipped', 'Unknown channel.'],
                 ! $to                      => ['skipped', $channel === 'email' ? 'No e-mail address.' : 'No phone number.'],
-                $this->refused($customer, $channel) => ['skipped', 'The customer asked not to get messages this way.'],
+                $this->refused($customer, $channel, $opts['consent'] ?? 'transactional') => ['skipped', ($opts['consent'] ?? '') === 'marketing'
+                    ? 'The customer hasn’t agreed to promotions this way.' : 'The customer asked not to get messages this way.'],
                 ! $ready[$channel]         => ['skipped', ucfirst(MessageLog::CHANNELS[$channel]) . ' is not set up for this house.'],
                 default                    => $this->deliver($tenant, $channel, $to, $customer, $subject, $text, $opts),
             };
             $logs->push(MessageLog::create([
                 'customer_id' => $customer->id, 'channel' => $channel, 'to' => $to, 'subject' => $subject, 'body' => $text,
                 'status' => $status, 'error' => $error ? mb_substr($error, 0, 255) : null, 'purpose' => $opts['purpose'] ?? null,
+                'outgoing_message_id' => $opts['outgoing'] ?? null,
                 'related_type' => isset($opts['related']) ? $opts['related']->getMorphClass() : null,
                 'related_id' => isset($opts['related']) ? $opts['related']->getKey() : null,
                 'sent_by' => isset($opts['by']) && $opts['by'] instanceof User ? $opts['by']->id : null,
@@ -138,11 +146,16 @@ class Messenger
         return $logs;
     }
 
-    protected function refused(Customer $c, string $channel): bool
+    /**
+     * $consent: 'transactional' (service messages: go unless they said no), 'marketing_soft' (greetings:
+     * go unless they said no to promotions), 'marketing' (promotions: only with a clear yes).
+     */
+    protected function refused(Customer $c, string $channel, string $consent = 'transactional'): bool
     {
-        $consent = $c->consents->first(fn ($x) => $x->channel === $channel && $x->purpose === 'transactional');
+        $purpose = $consent === 'transactional' ? 'transactional' : 'marketing';
+        $answer = $c->consents->first(fn ($x) => $x->channel === $channel && $x->purpose === $purpose);
 
-        return $consent !== null && ! $consent->granted;
+        return $consent === 'marketing' ? ! $answer?->granted : ($answer !== null && ! $answer->granted);
     }
 
     /** @return array{0: string, 1: ?string} [status, error] */
@@ -152,7 +165,7 @@ class Messenger
             return match ($channel) {
                 'email'    => $this->email($tenant, $to, $customer, $subject, $text),
                 'sms'      => $this->sms($tenant, $to, $text),
-                'whatsapp' => $this->whatsapp($tenant, $to, $text, $opts['whatsapp_params'] ?? null),
+                'whatsapp' => $this->whatsapp($tenant, $to, $text, $opts['whatsapp_params'] ?? null, array_key_exists('whatsapp_template', $opts) ? $opts['whatsapp_template'] : false),
             };
         } catch (\Throwable $e) {
             Log::warning('Customer message failed', ['channel' => $channel, 'error' => $e->getMessage()]);
@@ -189,13 +202,15 @@ class Messenger
         return $res->successful() ? ['sent', null] : ['failed', 'Twilio: ' . ($res->json('message') ?? 'error ' . $res->status())];
     }
 
-    protected function whatsapp(Tenant $tenant, string $to, string $text, ?array $params): array
+    /** $template: a template name, null for none, false for the house's materials template. */
+    protected function whatsapp(Tenant $tenant, string $to, string $text, ?array $params, string|null|false $template = false): array
     {
         $s = self::settings($tenant);
+        $template = $template === false ? $s['whatsapp_template'] : $template;
         $endpoint = 'https://graph.facebook.com/' . config('store.whatsapp_api_version', 'v21.0') . '/' . StoreSettings::get($tenant, 'whatsapp.cloud_phone_id') . '/messages';
-        $body = $s['whatsapp_template'] && $params
+        $body = $template && $params
             ? ['messaging_product' => 'whatsapp', 'to' => $to, 'type' => 'template', 'template' => [
-                'name' => $s['whatsapp_template'], 'language' => ['code' => $s['whatsapp_lang'] ?: 'en'],
+                'name' => $template, 'language' => ['code' => $s['whatsapp_lang'] ?: 'en'],
                 // Template values may not contain line breaks.
                 'components' => [['type' => 'body', 'parameters' => array_map(fn ($p) => ['type' => 'text', 'text' => mb_substr(preg_replace('/\s+/', ' ', (string) $p), 0, 900)], $params)]],
             ]]

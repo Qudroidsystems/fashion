@@ -37,7 +37,7 @@ class OrderController extends Controller
         $this->middleware('permission:Manage quotation', ['only' => ['quotations', 'quotation', 'storeQuotation', 'accept']]);
         $this->middleware('permission:View order', ['only' => ['index', 'show']]);
         $this->middleware('permission:Create order', ['only' => ['store', 'accept']]);
-        $this->middleware('permission:Update order', ['only' => ['update', 'statusEvent']]);
+        $this->middleware('permission:Update order', ['only' => ['update', 'statusEvent', 'message']]);
         $this->middleware('permission:Cancel order', ['only' => ['cancel']]);
         $this->middleware('permission:Manage invoice', ['only' => ['storeInvoice', 'issueInvoice']]);
         $this->middleware('permission:Record payment', ['only' => ['storePayment', 'allocate', 'refund']]);
@@ -318,6 +318,26 @@ class OrderController extends Controller
     }
 
     /** Detail-only extras for the staff app: what to do next, risk, money documents, fittings. */
+    /** POST /orders/{order}/messages {text} — staff message the customer; goes through the outbox. */
+    public function message(Request $request, Order $order): JsonResponse
+    {
+        $data = $request->validate(['text' => 'required|string|max:1000']);
+        abort_unless($order->customer, 422, 'This order has no customer.');
+        $m = app(\App\Services\Messaging\CustomerUpdates::class)->custom($order->customer, $data['text'], $order, $request->user());
+
+        return response()->json(['success' => true, 'data' => $this->messageData($m->fresh(), CurrentTenant::get()->timezone ?: config('app.timezone'))], 201);
+    }
+
+    protected function messageData(\App\Models\OutgoingMessage $m, string $tz): array
+    {
+        return [
+            'id' => $m->id, 'purpose' => $m->purpose,
+            'label' => $m->purpose === 'custom' ? 'Message' : (\App\Services\Messaging\CustomerUpdates::EVENTS[$m->purpose][0] ?? ucfirst(str_replace('_', ' ', $m->purpose))),
+            'body' => $m->body, 'status' => $m->status, 'result' => $m->result, 'by' => $m->creator?->name,
+            'at' => $m->created_at->copy()->timezone($tz)->toIso8601String(),
+        ];
+    }
+
     protected function orderExtras(Order $o, Request $request, bool $money): array
     {
         $tz = CurrentTenant::get()->timezone ?: config('app.timezone');
@@ -336,6 +356,12 @@ class OrderController extends Controller
                 'customer' => $o->customer?->name,
             ])->values(),
         ];
+        $updates = app(\App\Services\Messaging\CustomerUpdates::class);
+        $out['messages'] = $updates->forOrder($o)->map(fn ($m) => $this->messageData($m, $tz))->values();
+        if ($o->status !== 'draft' && $request->user()->can('Update order')) {
+            $out['message_drafts'] = collect(['order_ready', 'balance_reminder', 'order_confirmed'])
+                ->map(fn ($e) => ['key' => $e, 'label' => \App\Services\Messaging\CustomerUpdates::EVENTS[$e][0], 'text' => $updates->draftFor($o, $e)])->values();
+        }
         if ($money) {
             $out['invoices'] = $o->invoices()->latest('id')->get()->map(fn ($i) => [
                 'id' => $i->public_id, 'number' => $i->number, 'kind' => $i->kind, 'status' => $i->status,

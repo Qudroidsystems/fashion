@@ -112,6 +112,7 @@
             @if($production)
                 @include('orders.partials.production')
                 @include('materials.partials.order-card')
+                @include('orders.partials.messages')
             @endif
 
             {{-- Materials --}}

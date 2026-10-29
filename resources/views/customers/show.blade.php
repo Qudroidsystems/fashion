@@ -92,6 +92,9 @@
                 </table>
             </x-cb.card>
 
+            @include('customers.partials.appointments')
+            @include('customers.partials.messages')
+
             @if($c->status !== 'merged')
             <x-cb.card title="Record" icon="ri-settings-3-line" class="mt-3">
                 <div class="d-flex flex-wrap gap-2">

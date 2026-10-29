@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogueController;
@@ -122,6 +123,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::patch('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
             Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
             Route::post('/orders/{order}/status-events', [OrderController::class, 'statusEvent'])->name('orders.status-events');
+            Route::post('/orders/{order}/messages', [OrderController::class, 'message'])->middleware('idempotent')->name('orders.messages.store');
+
+            // Appointments diary (appointments + fittings).
+            Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+            Route::get('/appointments/meta', [AppointmentController::class, 'meta'])->name('appointments.meta');
+            Route::post('/appointments', [AppointmentController::class, 'store'])->middleware('idempotent')->name('appointments.store');
+            Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
+            Route::post('/appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('appointments.reschedule');
+            Route::post('/appointments/{appointment}/status', [AppointmentController::class, 'status'])->name('appointments.status');
             Route::post('/invoices', [OrderController::class, 'storeInvoice'])->middleware('idempotent')->name('invoices.store');
             Route::post('/invoices/{invoice}/issue', [OrderController::class, 'issueInvoice'])->name('invoices.issue');
             Route::post('/payments', [OrderController::class, 'storePayment'])->middleware('idempotent')->name('payments.store');
