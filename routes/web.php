@@ -222,6 +222,9 @@ Route::middleware('auth')->group(function () {
     require __DIR__ . '/modules/finance.php';
     require __DIR__ . '/modules/store.php';
     require __DIR__ . '/modules/attendance.php';
+    require __DIR__ . '/modules/materials.php';
+    require __DIR__ . '/modules/appointments.php';
+    require __DIR__ . '/modules/campaigns.php';
 
     // House website (settings and the enquiries it receives)
     Route::get('/website', [\App\Http\Controllers\Sites\WebsiteController::class, 'edit'])->name('website.edit');

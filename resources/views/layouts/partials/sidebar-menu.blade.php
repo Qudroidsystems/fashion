@@ -23,7 +23,7 @@
 
     {{-- FASHION HOUSE MODULES --}}
     @php $visibleSoon = collect($soon)->filter(fn ($m) => $u->can($m['perm'])); @endphp
-    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project') || $u->can('View reports') || $u->can('View attendance'))
+    @if($visibleSoon->count() || $u->can('View customer') || $u->can('View measurement') || $u->can('View style') || $u->can('View product') || $u->can('View inventory') || $u->can('View order') || $u->can('Use POS') || $u->can('View production') || $u->can('View project') || $u->can('View reports') || $u->can('View attendance') || $u->can('View customer materials') || $u->can('Manage appointment') || $u->can('Send campaign'))
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Fashion House</span></li>
     @endif
 
@@ -46,6 +46,22 @@
                 @endif
             </ul>
         </div>
+    </li>
+    @endcan
+
+    @can('Send campaign')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('campaigns.*') ? 'active' : '' }}" href="{{ route('campaigns.index') }}">
+            <i class="ri-megaphone-line"></i> <span>Campaigns</span>
+        </a>
+    </li>
+    @endcan
+
+    @can('Manage appointment')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('appointments.*') ? 'active' : '' }}" href="{{ route('appointments.index') }}">
+            <i class="ri-calendar-todo-line"></i> <span>Appointments</span>
+        </a>
     </li>
     @endcan
 
@@ -218,6 +234,14 @@
     </li>
     @endcan
 
+    @can('View customer materials')
+    <li class="nav-item">
+        <a class="nav-link menu-link {{ request()->routeIs('materials.*') ? 'active' : '' }}" href="{{ route('materials.index') }}">
+            <i class="ri-archive-drawer-line"></i> <span>Customer materials</span>
+        </a>
+    </li>
+    @endcan
+
     @can('View attendance')
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}" href="{{ route('attendance.index') }}">
@@ -277,12 +301,24 @@
     @endcan
 
     {{-- SETTINGS --}}
-    @canany(['Manage tenant settings', 'View branch', 'Manage branch'])
+    @canany(['Manage tenant settings', 'View branch', 'Manage branch', 'Manage notification templates'])
         <li class="menu-title"><i class="ri-more-fill"></i> <span>Settings</span></li>
+        @can('Manage notification templates')
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('settings.customer-messages*') ? 'active' : '' }}" href="{{ route('settings.customer-messages') }}">
+                <i class="ri-chat-settings-line"></i> <span>Customer Messages</span>
+            </a>
+        </li>
+        @endcan
         @can('Manage tenant settings')
         <li class="nav-item">
             <a class="nav-link menu-link {{ request()->routeIs('settings.tenant.*') ? 'active' : '' }}" href="{{ route('settings.tenant.edit') }}">
                 <i class="ri-store-2-line"></i> <span>House Settings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link menu-link {{ request()->routeIs('settings.messaging*') ? 'active' : '' }}" href="{{ route('settings.messaging') }}">
+                <i class="ri-message-3-line"></i> <span>Messaging</span>
             </a>
         </li>
         <li class="nav-item">

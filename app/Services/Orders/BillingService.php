@@ -210,6 +210,7 @@ class BillingService
                 $this->autoApply($payment);
             }
             AuditLogger::log('payment.recorded', $payment, after: ['number' => $payment->number, 'amount' => $amount, 'method' => $payment->method, 'applied' => $payment->allocated()]);
+            \App\Services\Messaging\CustomerUpdates::safely(fn ($u) => $u->paymentReceived($payment));
 
             return $payment->fresh();
         });

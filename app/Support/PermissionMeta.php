@@ -45,6 +45,10 @@ class PermissionMeta
     /** Exact-name overrides for permissions the generic rule can't phrase well. */
     protected const OVERRIDES = [
         'View dashboard'                => ['View',    'Open the fashion house dashboard.'],
+        'View customer materials'       => ['View',    'See fabric, garments and other items customers have left with the house, and where they are.'],
+        'Manage customer materials'     => ['Manage',  'Receive and tag customers\' items, move them, give them back, and send customers reminders to collect them.'],
+        'View attendance'               => ['View',    'See who is in, who has left and who was late, from the entrance QR scans.'],
+        'Manage attendance'             => ['Manage',  'Open the entrance screen, print the code, change attendance settings and add missed scans.'],
         'View online orders'            => ['View',    'See orders placed on the online shop or through WhatsApp, with the customer\'s details.'],
         'Manage online orders'          => ['Manage',  'Accept, edit, pack, ship, deliver and cancel online and WhatsApp orders, and take new WhatsApp orders.'],
         'Confirm online payment'        => ['Approve', 'Confirm bank transfers and other payments for online orders (records the payment).'],

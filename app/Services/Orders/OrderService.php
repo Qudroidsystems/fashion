@@ -352,6 +352,7 @@ class OrderService
             'order_id' => $order->id, 'from_status' => $from, 'to_status' => $to, 'note' => $note,
             'customer_visible' => $visible ?? OrderStatus::customerVisible($to), 'user_id' => auth()->id(),
         ]);
+        \App\Services\Messaging\CustomerUpdates::safely(fn ($u) => $u->orderStatusChanged($order, $to));
     }
 
     /** A garment can only use approved measurements of this order's customer (§6.1 step 7). */

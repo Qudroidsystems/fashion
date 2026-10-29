@@ -208,6 +208,10 @@ class ProductionController extends Controller
             'outstanding_conditions' => 'nullable|string|max:1000',
             'address'                => 'nullable|string|max:255',
             'evidence'               => 'nullable|image|max:5120',
+            'material_ids'           => 'nullable|array',
+            'material_ids.*'         => 'string',
+            'material_quantities'    => 'nullable|array',
+            'material_quantities.*'  => 'nullable|numeric|min:0',
         ]);
         $order = $this->order($data['order']);
         $d = $this->deliveries->handOver($order, ['line_ids' => $data['lines']] + $data, $request->user(), $request->file('evidence'));

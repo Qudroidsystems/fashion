@@ -78,6 +78,9 @@ class PermissionCatalog
         'Attendance' => [
             'View attendance', 'Manage attendance',
         ],
+        'Customer materials' => [
+            'View customer materials', 'Manage customer materials',
+        ],
     ];
 
     /**
@@ -109,6 +112,8 @@ class PermissionCatalog
                 'Manage appointment', 'View reports', 'Export reports',
                 'View online orders', 'Manage online orders', 'Confirm online payment', 'Manage store products', 'Manage online store', 'Moderate reviews',
                 'View attendance', 'Manage attendance',
+                'Manage notification templates', 'Send campaign',
+                'View customer materials', 'Manage customer materials',
             ],
         ],
         'Online Sales Rep' => [
@@ -120,6 +125,7 @@ class PermissionCatalog
                 'View product', 'View inventory', 'View order',
                 'View payment', 'Record payment',
                 'View online orders', 'Manage online orders', 'Confirm online payment',
+                'View customer materials',
             ],
         ],
         'Designer' => [
@@ -134,6 +140,7 @@ class PermissionCatalog
                 'View order', 'Create order', 'Update order', 'Manage quotation',
                 'View production', 'Manage fitting',
                 'View project', 'Manage appointment',
+                'View customer materials', 'Manage customer materials',
             ],
         ],
         'Tailor' => [
@@ -144,6 +151,7 @@ class PermissionCatalog
                 'View customer', 'View measurement', 'Capture measurement', 'View style',
                 'View order', 'View production', 'Update production', 'Record quality check',
                 'View project',
+                'View customer materials',
             ],
         ],
         'Storekeeper' => [
@@ -156,6 +164,7 @@ class PermissionCatalog
                 'Manage supplier', 'Manage purchase order',
                 'View order', 'View project',
                 'View online orders', 'Manage online orders',
+                'View customer materials', 'Manage customer materials',
             ],
         ],
         'Cashier' => [
@@ -169,6 +178,8 @@ class PermissionCatalog
                 'Use POS', 'Open cash shift', 'Close cash shift',
                 'View payment', 'Record payment',
                 'View online orders', 'Confirm online payment',
+                'View customer materials', 'Manage customer materials',
+                'Manage appointment',
             ],
         ],
         'Accountant' => [

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogueController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductionController;
 use App\Http\Controllers\Api\V1\ProjectController;
+use App\Http\Controllers\Api\V1\MaterialController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\StaffAppController;
 use App\Http\Controllers\Api\V1\TenantController;
@@ -121,6 +123,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::patch('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
             Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
             Route::post('/orders/{order}/status-events', [OrderController::class, 'statusEvent'])->name('orders.status-events');
+            Route::post('/orders/{order}/messages', [OrderController::class, 'message'])->middleware('idempotent')->name('orders.messages.store');
+
+            // Appointments diary (appointments + fittings).
+            Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+            Route::get('/appointments/meta', [AppointmentController::class, 'meta'])->name('appointments.meta');
+            Route::post('/appointments', [AppointmentController::class, 'store'])->middleware('idempotent')->name('appointments.store');
+            Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
+            Route::post('/appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->name('appointments.reschedule');
+            Route::post('/appointments/{appointment}/status', [AppointmentController::class, 'status'])->name('appointments.status');
             Route::post('/invoices', [OrderController::class, 'storeInvoice'])->middleware('idempotent')->name('invoices.store');
             Route::post('/invoices/{invoice}/issue', [OrderController::class, 'issueInvoice'])->name('invoices.issue');
             Route::post('/payments', [OrderController::class, 'storePayment'])->middleware('idempotent')->name('payments.store');
@@ -157,6 +168,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Reports (SRS §8.2) — same permissions, plan and branch limits as the screens.
             Route::get('/reports', [\App\Http\Controllers\Api\V1\ReportController::class, 'index'])->name('reports.index');
             Route::get('/reports/{report}', [\App\Http\Controllers\Api\V1\ReportController::class, 'show'])->name('reports.show');
+
+            // Customer materials: fabric and garments customers leave with the house.
+            Route::get('/materials/meta', [MaterialController::class, 'meta'])->name('materials.meta');
+            Route::get('/materials/lookup', [MaterialController::class, 'lookup'])->name('materials.lookup');
+            Route::post('/materials/return', [MaterialController::class, 'giveBack'])->middleware('idempotent')->name('materials.return');
+            Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
+            Route::post('/materials', [MaterialController::class, 'store'])->middleware('idempotent')->name('materials.store');
+            Route::get('/materials/{material}', [MaterialController::class, 'show'])->name('materials.show');
+            Route::patch('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
+            Route::post('/materials/{material}/photos', [MaterialController::class, 'photos'])->name('materials.photos');
+            Route::post('/materials/{material}/move', [MaterialController::class, 'move'])->name('materials.move');
+            Route::post('/materials/{material}/close', [MaterialController::class, 'close'])->name('materials.close');
+            Route::post('/materials/{material}/notes', [MaterialController::class, 'note'])->name('materials.notes');
+            Route::post('/customers/{customer}/materials/remind', [MaterialController::class, 'remind'])->middleware('throttle:10,1')->name('customers.materials.remind');
 
             // QR attendance: staff scan the entrance code coming in and going out.
             Route::post('/attendance/scan', [AttendanceController::class, 'scan'])->middleware('throttle:20,1')->name('attendance.scan');
